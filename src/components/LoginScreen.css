@@ -1,0 +1,81 @@
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #091c3f, #02060f 65%);
+  color: #fff;
+  padding: 24px;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 32px;
+  width: min(400px, 100%);
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 0.08em;
+}
+
+.login-card p {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-form input {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+}
+
+.login-form button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, #28c5ff, #5e8bff);
+  color: white;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.login-form .google-signin-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #f3f7ff;
+}
+
+.login-form button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.error-text {
+  color: #ffbaba;
+  margin: 0;
+}

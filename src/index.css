@@ -1,0 +1,15 @@
+@import './styles/designSystem.css';
+@import './styles/pages.css';
+
+.screen-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  color: var(--color-text-muted);
+  background: var(--color-page);
+}
+
+.error-text {
+  color: var(--color-error);
+}

@@ -1,0 +1,35 @@
+.signals-screen {
+  min-height: 100vh;
+  width: 100%;
+  background: radial-gradient(circle at top, #0f1630, #070b1a 56%);
+  color: #edf1fb;
+}
+
+.signals-page-body {
+  padding: 30px clamp(20px, 2.8vw, 36px) 24px;
+}
+
+.signals-page-welcome {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: rgba(237, 241, 251, 0.7);
+}
+
+.signals-page-body h1 {
+  margin: 8px 0 0;
+  font-size: clamp(30px, 2.5vw, 38px);
+  line-height: 1.04;
+}
+
+.signals-page-section.signals-section {
+  margin-top: 22px;
+  background: transparent;
+  padding: 0;
+}
+
+@media (max-width: 760px) {
+  .signals-page-welcome {
+    font-size: 16px;
+  }
+}

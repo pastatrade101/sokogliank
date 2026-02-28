@@ -1,0 +1,370 @@
+.upgrade-screen {
+  min-height: 100vh;
+  width: 100%;
+  background: radial-gradient(circle at top, #111a37, #070b1a 58%);
+  color: #edf1fb;
+}
+
+.upgrade-body {
+  padding: 30px clamp(20px, 2.8vw, 36px) 24px;
+}
+
+.upgrade-welcome {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(237, 241, 251, 0.65);
+}
+
+.upgrade-body h1 {
+  margin: 8px 0 0;
+  font-size: clamp(30px, 2.4vw, 38px);
+  line-height: 1.04;
+}
+
+.upgrade-copy {
+  margin: 10px 0 0;
+  max-width: 880px;
+  color: #c2ccdf;
+  font-size: 14px;
+}
+
+.upgrade-layout {
+  margin-top: 18px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1100px) {
+  .upgrade-layout {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+.upgrade-card {
+  background: #121a31;
+  border: 1px solid rgba(74, 96, 144, 0.48);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.upgrade-card h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.upgrade-card.is-success {
+  margin-top: 18px;
+  border-color: rgba(73, 180, 123, 0.64);
+  background: linear-gradient(120deg, #16263b, #132a23);
+}
+
+.upgrade-card.is-success p {
+  margin: 8px 0 0;
+  color: #cde9d6;
+}
+
+.upgrade-plan-grid {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.upgrade-plan {
+  position: relative;
+  text-align: left;
+  background: #0b1123;
+  border: 1px solid rgba(99, 123, 173, 0.38);
+  border-radius: 12px;
+  padding: 12px;
+  color: #eef2fb;
+  cursor: pointer;
+}
+
+.upgrade-plan.is-selected {
+  border-color: rgba(82, 137, 255, 0.94);
+  box-shadow: 0 0 0 1px rgba(82, 137, 255, 0.34) inset;
+}
+
+.upgrade-plan.is-disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.upgrade-plan-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.upgrade-plan-subtitle {
+  margin: 6px 0 0;
+  color: #acb7d0;
+  font-size: 12px;
+}
+
+.upgrade-plan-price {
+  margin: 10px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.upgrade-plan-price span {
+  font-size: 12px;
+  color: #95a5ca;
+}
+
+.upgrade-plan-duration {
+  margin: 6px 0 0;
+  color: #92a1c4;
+  font-size: 12px;
+}
+
+.upgrade-plan-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  height: 21px;
+  border-radius: 999px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.15);
+  color: #d3d9ea;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.upgrade-form {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.upgrade-form label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b9c4de;
+}
+
+.upgrade-form select,
+.upgrade-form input {
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid rgba(116, 137, 176, 0.58);
+  background: #080e1f;
+  color: #f4f7ff;
+  padding: 0 11px;
+  font-size: 13px;
+}
+
+.upgrade-primary-btn {
+  margin-top: 8px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(78, 132, 255, 0.9);
+  background: linear-gradient(180deg, #3f84ff, #325fc5);
+  color: #f8fbff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+}
+
+.upgrade-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upgrade-secondary-btn {
+  margin-top: 10px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(130, 149, 184, 0.62);
+  background: rgba(16, 24, 47, 0.9);
+  color: #eaf1ff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 12px;
+}
+
+.upgrade-secondary-btn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.upgrade-message {
+  margin: 10px 0 0;
+  font-size: 12px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.upgrade-message.is-error {
+  color: #ffd4d2;
+  background: rgba(219, 74, 74, 0.21);
+  border: 1px solid rgba(219, 74, 74, 0.44);
+}
+
+.upgrade-message.is-success {
+  color: #d4f9de;
+  background: rgba(63, 184, 110, 0.2);
+  border: 1px solid rgba(63, 184, 110, 0.44);
+}
+
+.upgrade-status {
+  margin-top: 12px;
+  border-radius: 10px;
+  background: #0b1123;
+  border: 1px solid rgba(116, 137, 176, 0.38);
+  padding: 10px;
+}
+
+.upgrade-status p {
+  margin: 0 0 6px;
+  color: #d5dded;
+  font-size: 12px;
+}
+
+.upgrade-status p:last-child {
+  margin-bottom: 0;
+}
+
+.upgrade-inline-link {
+  display: inline-flex;
+  margin-top: 2px;
+  color: #76b2ff;
+  font-size: 12px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.upgrade-followup {
+  margin-top: 12px;
+  border-top: 1px solid rgba(116, 137, 176, 0.3);
+  padding-top: 10px;
+}
+
+.upgrade-followup-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f0f5ff;
+}
+
+.upgrade-followup-question {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #bfcbeb;
+}
+
+.upgrade-followup-options {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.upgrade-followup-option {
+  text-align: left;
+  border: 1px solid rgba(118, 140, 183, 0.45);
+  background: #0a1021;
+  color: #d8e2f9;
+  border-radius: 9px;
+  min-height: 34px;
+  font-size: 12px;
+  padding: 7px 10px;
+}
+
+.upgrade-followup-option.is-selected {
+  border-color: rgba(82, 137, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(82, 137, 255, 0.3) inset;
+}
+
+.upgrade-followup-option:disabled {
+  opacity: 0.62;
+}
+
+.upgrade-followup-message {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.upgrade-followup-message.is-success {
+  color: #acf0bf;
+}
+
+.upgrade-followup-message.is-error {
+  color: #ffb8b4;
+}
+
+.upgrade-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 18, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 1000;
+}
+
+.upgrade-modal {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(103, 124, 166, 0.55);
+  background: #111a31;
+  padding: 14px;
+}
+
+.upgrade-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.upgrade-modal-close {
+  border: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #edf1fb;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.upgrade-modal-close:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.upgrade-modal-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.upgrade-text-btn {
+  border: 0;
+  background: transparent;
+  color: #c2cdea;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
+.upgrade-text-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

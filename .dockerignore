@@ -1,0 +1,14 @@
+.git
+.gitignore
+node_modules
+build
+npm-debug.log*
+Dockerfile*
+docker-compose*.yml
+.env
+.env.*
+!.env.example
+crumb.png
+design.png
+landing1.png
+view.png
