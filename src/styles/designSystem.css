@@ -121,6 +121,22 @@ textarea {
   gap: var(--space-2);
 }
 
+.app-shell-sidebar-foot {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+}
+
+.app-shell-sidebar-foot-copy {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
 .app-shell-nav-link {
   text-decoration: none;
   height: 40px;
@@ -266,12 +282,6 @@ textarea {
   justify-content: center;
   padding: 0 4px;
   margin-right: 6px;
-}
-
-.app-shell-bottom {
-  margin-top: auto;
-  display: grid;
-  gap: var(--space-2);
 }
 
 .app-shell-main {
@@ -1664,6 +1674,18 @@ textarea {
   word-break: break-all;
 }
 
+.profile-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.profile-modal-signout {
+  min-width: 196px;
+  justify-content: center;
+}
+
 .ui-stack {
   display: grid;
   gap: var(--space-4);
@@ -1718,13 +1740,16 @@ textarea {
     word-break: break-word;
   }
 
-  .app-shell.is-collapsed .app-shell-bottom .ui-button {
-    width: 40px;
-    min-width: 40px;
-    padding: 0;
-    margin: 0 auto;
-    gap: 0;
+  .app-shell.is-collapsed .app-shell-sidebar-foot {
+    padding-top: var(--space-3);
+    text-align: center;
   }
+
+  .app-shell.is-collapsed .app-shell-sidebar-foot-copy {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
 }
 
 @media (max-width: 1279px) {
@@ -1848,6 +1873,11 @@ textarea {
     display: inline-flex;
   }
 
+  .app-shell-sidebar-foot-copy {
+    font-size: 10px;
+    text-align: center;
+  }
+
   .ui-grid.cols-2,
   .ui-grid.cols-3,
   .ui-grid.cols-4 {
@@ -1878,5 +1908,13 @@ textarea {
 
   .profile-modal-pill {
     max-width: 100%;
+  }
+
+  .profile-modal-actions {
+    justify-content: stretch;
+  }
+
+  .profile-modal-actions .ui-button {
+    flex: 1 1 0;
   }
 }

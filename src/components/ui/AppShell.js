@@ -154,12 +154,12 @@ const AppShell = ({
             ))}
           </nav>
 
-          <div className="app-shell-bottom">
-            <Button variant="secondary" onClick={onSignOut}>
-              <AppIcon name="logout" size={16} />
-              {!sidebarCollapsed ? 'Sign out' : null}
-            </Button>
+          <div className="app-shell-sidebar-foot" aria-label="Application copyright">
+            <p className="app-shell-sidebar-foot-copy">
+              {sidebarCollapsed ? '© 2026' : 'Sokogliank Copyright 2026'}
+            </p>
           </div>
+
         </aside>
         {isMobileViewport && sidebarOpen ? (
           <button
@@ -249,9 +249,19 @@ const AppShell = ({
         title="Profile Details"
         onClose={() => setProfileOpen(false)}
         footer={(
-          <Button variant="secondary" onClick={() => setProfileOpen(false)}>
-            Close
-          </Button>
+          <div className="profile-modal-actions">
+            <Button
+              className="profile-modal-signout"
+              variant="primary"
+              onClick={() => {
+                setProfileOpen(false);
+                onSignOut();
+              }}
+            >
+              <AppIcon name="logout" size={16} />
+              Sign out
+            </Button>
+          </div>
         )}
       >
         <section className="profile-modal-stack">

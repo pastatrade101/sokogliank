@@ -30,7 +30,6 @@ const TestimonialsPage = () => {
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [ascending, setAscending] = useState(false);
   const [previewTestimonial, setPreviewTestimonial] = useState(null);
   const [composerOpen, setComposerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -84,12 +83,9 @@ const TestimonialsPage = () => {
 
   const sortedTestimonials = useMemo(() => {
     const next = [...testimonials];
-    next.sort((left, right) => {
-      const comparison = left.createdAtDate.getTime() - right.createdAtDate.getTime();
-      return ascending ? comparison : -comparison;
-    });
+    next.sort((left, right) => right.createdAtDate.getTime() - left.createdAtDate.getTime());
     return next;
-  }, [ascending, testimonials]);
+  }, [testimonials]);
 
   const proofCount = useMemo(
     () => sortedTestimonials.filter((item) => item.proofImageUrl).length,
@@ -123,25 +119,6 @@ const TestimonialsPage = () => {
       onToggleTheme={toggleTheme}
       searchValue=""
       onSearchChange={null}
-      topbarActions={(
-        <div className="testimonials-topbar-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => setAscending((current) => !current)}
-          >
-            <AppIcon name="sparkles" size={14} />
-            {ascending ? 'Oldest first' : 'Newest first'}
-          </Button>
-          {canPostTestimonials ? (
-            <Button type="button" variant="primary" size="sm" onClick={() => setComposerOpen(true)}>
-              <AppIcon name="message" size={14} />
-              Post Review
-            </Button>
-          ) : null}
-        </div>
-      )}
     >
       <Breadcrumbs
         items={[
@@ -149,6 +126,15 @@ const TestimonialsPage = () => {
           { label: 'Testimonials' },
         ]}
       />
+
+      {canPostTestimonials ? (
+        <div className="testimonials-content-head">
+          <Button type="button" variant="primary" size="sm" onClick={() => setComposerOpen(true)}>
+            <AppIcon name="message" size={14} />
+            Post Review
+          </Button>
+        </div>
+      ) : null}
 
       <section className="testimonials-hero-grid">
         <article className="hero-banner hero-banner-premium testimonials-hero">
@@ -183,7 +169,7 @@ const TestimonialsPage = () => {
         <Card className="dashboard-glance-card testimonials-glance-card" title="Review Feed" subtitle="Published testimonials only" hover>
           <div className="ui-pill-row">
             <span className="ui-pill active">Verified members</span>
-            <span className="ui-pill">{ascending ? 'Chronology: oldest' : 'Chronology: newest'}</span>
+            <span className="ui-pill">Chronology: newest</span>
           </div>
           <div className="session-flow-list">
             <div className="session-flow-row">

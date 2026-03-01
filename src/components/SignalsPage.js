@@ -389,8 +389,16 @@ const SignalsPage = () => {
       searchValue={searchValue}
       onSearchChange={setSearchValue}
       contentClassName="signals-page-content"
-      topbarActions={(
-        <div className="signals-topbar-actions">
+    >
+      <Breadcrumbs
+        items={[
+          { label: 'Workspace', to: '/' },
+          { label: 'Signals' },
+        ]}
+      />
+
+      <div className="signals-content-head">
+        <div className="signals-content-actions">
           {traderUser ? (
             <Button
               size="sm"
@@ -403,19 +411,8 @@ const SignalsPage = () => {
               Post Signal
             </Button>
           ) : null}
-          <Button size="sm" variant="secondary" onClick={() => setLiveOnly((current) => !current)}>
-            <AppIcon name="refresh" size={14} />
-            {liveOnly ? 'Showing Live' : 'Showing All'}
-          </Button>
         </div>
-      )}
-    >
-      <Breadcrumbs
-        items={[
-          { label: 'Workspace', to: '/' },
-          { label: 'Signals' },
-        ]}
-      />
+      </div>
 
       {!premiumActive ? (
         <Card hover>

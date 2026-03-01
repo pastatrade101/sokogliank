@@ -236,20 +236,6 @@ const TipsPage = () => {
       onToggleTheme={toggleTheme}
       searchValue={searchValue}
       onSearchChange={setSearchValue}
-      topbarActions={(
-        <div className="tips-topbar-actions">
-          {canPostTips ? (
-            <Button variant="primary" size="sm" onClick={() => setComposeOpen(true)}>
-              <AppIcon name="sparkles" size={14} />
-              Post Tip
-            </Button>
-          ) : null}
-          <Button variant="secondary" size="sm" to="/signals">
-            <AppIcon name="signal" size={14} />
-            Back to Signals
-          </Button>
-        </div>
-      )}
     >
       <Breadcrumbs
         items={[
@@ -257,6 +243,15 @@ const TipsPage = () => {
           { label: 'Tips' },
         ]}
       />
+
+      {canPostTips ? (
+        <div className="tips-content-head">
+          <Button variant="primary" size="sm" onClick={() => setComposeOpen(true)}>
+            <AppIcon name="sparkles" size={14} />
+            Post Tip
+          </Button>
+        </div>
+      ) : null}
 
       <section className="tips-hero-grid">
         <article className="tips-hero-panel">
