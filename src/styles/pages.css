@@ -3551,10 +3551,14 @@
 
   .auth-remember-row {
     align-items: center;
+    min-width: 0;
   }
 
   .auth-form-meta {
-    display: grid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
   }
 
   .auth-actions .ui-button {
