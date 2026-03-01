@@ -67,7 +67,7 @@ const motion = {
 
 const themes = {
   light: {
-    accent: '#1c386c',
+    accent: '#b98a1e',
     primary: '#1c386c',
     secondary: '#7a8699',
     success: '#178a58',
@@ -84,7 +84,7 @@ const themes = {
     shadowTint: 'rgba(16, 24, 40, 0.12)',
   },
   dark: {
-    accent: '#1c386c',
+    accent: '#f2c45a',
     primary: '#1c386c',
     secondary: '#8b9ab2',
     success: '#4bc68a',
@@ -97,7 +97,7 @@ const themes = {
     textMuted: '#a8b6d0',
     border: '#2a3951',
     overlay: 'rgba(4, 8, 15, 0.72)',
-    focus: 'rgba(28, 56, 108, 0.4)',
+    focus: 'rgba(242, 196, 90, 0.34)',
     shadowTint: 'rgba(2, 6, 15, 0.5)',
   },
 };

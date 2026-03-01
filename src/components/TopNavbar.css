@@ -5,7 +5,7 @@
   --nav-muted: rgba(236, 241, 255, 0.68);
   --nav-pill-bg: rgba(0, 0, 0, 0.35);
   --nav-pill-border: rgba(255, 255, 255, 0.08);
-  --nav-pill-active: linear-gradient(180deg, #4f86ff 0%, #3e76f3 100%);
+  --nav-pill-active: linear-gradient(180deg, #f2c45a 0%, #dca22c 100%);
   --nav-signout-bg: transparent;
   position: sticky;
   top: 0;
@@ -29,7 +29,7 @@
   --nav-muted: rgba(15, 23, 42, 0.58);
   --nav-pill-bg: rgba(15, 23, 42, 0.06);
   --nav-pill-border: rgba(15, 23, 42, 0.12);
-  --nav-pill-active: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  --nav-pill-active: linear-gradient(180deg, #d3a12f 0%, #b98a1e 100%);
   --nav-signout-bg: rgba(255, 255, 255, 0.72);
 }
 
@@ -45,7 +45,7 @@
 
 .top-navbar-mark {
   font-size: 21px;
-  color: #4a7aff;
+  color: #f2c45a;
   line-height: 1;
 }
 
@@ -78,7 +78,7 @@
 
 .top-navbar-link.is-active {
   background: var(--nav-pill-active);
-  color: #f8fbff;
+  color: #1d1404;
 }
 
 .top-navbar-link.is-muted {
@@ -103,6 +103,17 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.top-navbar-icon:hover,
+.top-navbar-signout:hover {
+  border-color: rgba(242, 196, 90, 0.24);
+  background: rgba(242, 196, 90, 0.12);
+  color: #f2c45a;
 }
 
 .top-navbar-icon svg,

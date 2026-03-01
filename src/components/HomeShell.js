@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/themeContext';
 import { isMember, isTrader } from '../utils/roleHelpers';
 import { isPremiumActive } from '../utils/membershipHelpers';
 import { useEngagementStore } from '../hooks/useEngagementStore';
+import { fetchAnalysisHighlights } from '../services/newsAnalysisService';
 import {
   AppShell,
   Breadcrumbs,
@@ -35,6 +36,8 @@ const HomeShell = () => {
   const [latestTips, setLatestTips] = useState([]);
   const [loadingSignals, setLoadingSignals] = useState(true);
   const [loadingTips, setLoadingTips] = useState(true);
+  const [analysisCards, setAnalysisCards] = useState([]);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(true);
   const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
@@ -75,6 +78,31 @@ const HomeShell = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const items = await fetchAnalysisHighlights(4);
+        if (active) {
+          setAnalysisCards(items);
+        }
+      } catch (_) {
+        if (active) {
+          setAnalysisCards([]);
+        }
+      } finally {
+        if (active) {
+          setLoadingAnalysis(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const greetingName = profile?.displayName || profile?.email || 'Trader';
   const premiumActive = isPremiumActive(profile);
 
@@ -90,10 +118,12 @@ const HomeShell = () => {
   }, [liveSignals, searchValue]);
 
   const sessionSummary = useMemo(() => {
-    const map = { asia: 0, london: 0, newyork: 0, weekend: 0 };
+    const map = { asia: 0, london: 0, newyork: 0 };
     filteredSignals.forEach((signal) => {
       const key = getSignalSessionBucket(signal);
-      map[key] = (map[key] || 0) + 1;
+      if (Object.prototype.hasOwnProperty.call(map, key)) {
+        map[key] = (map[key] || 0) + 1;
+      }
     });
     return map;
   }, [filteredSignals]);
@@ -109,7 +139,6 @@ const HomeShell = () => {
       { key: 'asia', label: 'Asia', count: sessionSummary.asia },
       { key: 'london', label: 'London', count: sessionSummary.london },
       { key: 'newyork', label: 'New York', count: sessionSummary.newyork },
-      { key: 'weekend', label: 'Weekend', count: sessionSummary.weekend },
     ].map((item) => ({
       ...item,
       percent: Math.round((item.count / safeTotal) * 100),
@@ -117,7 +146,7 @@ const HomeShell = () => {
   }, [sessionSummary, totalSessionSignals]);
 
   const sessionPercentMap = useMemo(() => {
-    const next = { asia: 0, london: 0, newyork: 0, weekend: 0 };
+    const next = { asia: 0, london: 0, newyork: 0 };
     sessionDistribution.forEach((entry) => {
       next[entry.key] = entry.percent;
     });
@@ -324,14 +353,53 @@ const HomeShell = () => {
           trendDirection="positive"
           icon="signal"
         />
-        <StatCard
-          label="Weekend Outlook"
-          value={sessionSummary.weekend}
-          trend={`${sessionPercentMap.weekend}% of board`}
-          trendDirection="positive"
-          icon="chart"
-        />
       </section>
+
+      <Card
+        title="Market Analysis"
+        subtitle="Four special analysis cards from the same live RSS analysis feed"
+        hover
+      >
+        {loadingAnalysis ? (
+          <div className="analysis-dashboard-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <SkeletonLoader key={`analysis-skeleton-${index}`} size="md" />
+            ))}
+          </div>
+        ) : analysisCards.length === 0 ? (
+          <EmptyState
+            title="No analysis available"
+            description="Fresh market analysis cards will appear here when the RSS feed responds."
+            actionLabel="Open News"
+            actionTo="/signals"
+            icon="sparkles"
+          />
+        ) : (
+          <div className="analysis-dashboard-grid">
+            {analysisCards.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`analysis-special-card tone-${index % 4}`.trim()}
+                onClick={() => window.open(item.link, '_blank', 'noopener,noreferrer')}
+              >
+                <span className="analysis-special-chip">
+                  <AppIcon name="sparkles" size={12} />
+                  Analysis
+                </span>
+                <p className="analysis-special-title">{item.title}</p>
+                <p className="analysis-special-copy">
+                  {item.description || 'Open the full market analysis for the latest detailed breakdown.'}
+                </p>
+                <div className="analysis-special-foot">
+                  <span>{formatRelativeAnalysisDate(item.publishedAt)}</span>
+                  <AppIcon name="external" size={14} />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </Card>
 
       <section className="surface-split">
         <Card title="Recently Viewed Signals" subtitle="Based on your latest interactions" hover>
@@ -417,3 +485,22 @@ const HomeShell = () => {
 };
 
 export default HomeShell;
+
+function formatRelativeAnalysisDate(value) {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    return 'Latest analysis';
+  }
+
+  const diffMs = Date.now() - value.getTime();
+  const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+
+  if (diffMinutes < 1) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h ago`;
+  if (diffMinutes < 10080) return `${Math.floor(diffMinutes / 1440)}d ago`;
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+  }).format(value);
+}

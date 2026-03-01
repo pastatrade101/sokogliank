@@ -356,6 +356,8 @@ const PremiumUpgradePage = () => {
                   key={plan.id}
                   type="button"
                   className={`plan-card ${selected ? 'selected' : ''}`.trim()}
+                  aria-pressed={selected}
+                  aria-current={selected ? 'true' : undefined}
                   disabled={!plan.isActive}
                   onClick={() => {
                     if (plan.isActive) {
@@ -363,10 +365,19 @@ const PremiumUpgradePage = () => {
                     }
                   }}
                 >
-                  <p className="plan-card-title">{plan.title}</p>
+                  <div className="plan-card-head">
+                    <p className="plan-card-title">{plan.title}</p>
+                    {selected ? (
+                      <span className="plan-card-selected-badge">
+                        <AppIcon name="check" size={13} />
+                        Selected
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="plan-card-subtitle">{plan.subtitle}</p>
                   <p className="plan-card-price">{formatPrice(plan.price, plan.currency)}</p>
                   <p className="plan-card-period">{labelForBillingPeriod(plan.billingPeriod)} • {plan.durationLabel}</p>
+                  {selected ? <p className="plan-card-selection-copy">This plan will be used for checkout.</p> : null}
                   {!plan.isActive ? <span className="status-badge">Unavailable</span> : null}
                 </button>
               );

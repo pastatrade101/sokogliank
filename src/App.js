@@ -5,6 +5,7 @@ import LoginScreen from './components/LoginScreen';
 import HomeShell from './components/HomeShell';
 import AdminShell from './components/AdminShell';
 import SignalsPage from './components/SignalsPage';
+import SessionsPage from './components/SessionsPage';
 import TipsPage from './components/TipsPage';
 import AdminUserManagementPage from './components/AdminUserManagementPage';
 import AdminContentManagementPage from './components/AdminContentManagementPage';
@@ -32,6 +33,7 @@ function App() {
                 <Route path="/admin/revenue" element={<AuthGate><AdminRevenuePage /></AuthGate>} />
                 <Route path="/admin/notifications" element={<AuthGate><AdminNotificationPage /></AuthGate>} />
                 <Route path="/signals" element={<AuthGate><SignalsPage /></AuthGate>} />
+                <Route path="/sessions" element={<AuthGate><SessionsPage /></AuthGate>} />
                 <Route path="/tips" element={<AuthGate><TipsPage /></AuthGate>} />
                 <Route path="/upgrade" element={<AuthGate><PremiumUpgradePage /></AuthGate>} />
                 <Route path="/terms" element={<PolicyPage />} />
