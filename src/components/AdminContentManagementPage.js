@@ -30,7 +30,6 @@ const AdminContentManagementPage = () => {
   const adminUser = isAdmin(profile?.role);
 
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [stats, setStats] = useState({
@@ -42,16 +41,11 @@ const AdminContentManagementPage = () => {
     todayHighlight: null,
   });
 
-  const loadContentMetrics = useCallback(async (manual = false) => {
+  const loadContentMetrics = useCallback(async () => {
     if (!adminUser) {
       return;
     }
-
-    if (manual) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+    setLoading(true);
     setError('');
 
     try {
@@ -101,7 +95,6 @@ const AdminContentManagementPage = () => {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load content metrics.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [adminUser]);
 
@@ -109,7 +102,7 @@ const AdminContentManagementPage = () => {
     if (!adminUser) {
       return;
     }
-    loadContentMetrics(false);
+    loadContentMetrics();
   }, [adminUser, loadContentMetrics]);
 
   const todayHighlightMeta = useMemo(() => {
@@ -137,11 +130,6 @@ const AdminContentManagementPage = () => {
       onToggleTheme={toggleTheme}
       searchValue=""
       onSearchChange={null}
-      topbarActions={(
-        <Button size="sm" variant="secondary" onClick={() => loadContentMetrics(true)} disabled={refreshing}>
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </Button>
-      )}
     >
       <Breadcrumbs
         items={[
@@ -154,7 +142,7 @@ const AdminContentManagementPage = () => {
         <ErrorState
           title="Unable to load content tools"
           description={error}
-          onRetry={() => loadContentMetrics(true)}
+          onRetry={loadContentMetrics}
         />
       ) : null}
 

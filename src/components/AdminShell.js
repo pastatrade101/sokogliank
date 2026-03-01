@@ -17,7 +17,6 @@ import { adminNavigation } from '../config/adminNavigation';
 import {
   AppShell,
   Breadcrumbs,
-  Button,
   Card,
   ErrorState,
   SkeletonLoader,
@@ -45,19 +44,14 @@ const AdminShell = () => {
   const [usersTrend, setUsersTrend] = useState([]);
   const [signalsTrend, setSignalsTrend] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  const loadDashboard = useCallback(async (manual = false) => {
+  const loadDashboard = useCallback(async () => {
     if (!adminUser) {
       return;
     }
-    if (manual) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+    setLoading(true);
     setError('');
 
     try {
@@ -120,7 +114,6 @@ const AdminShell = () => {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load admin analytics.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [adminUser]);
 
@@ -128,7 +121,7 @@ const AdminShell = () => {
     if (!adminUser) {
       return;
     }
-    loadDashboard(false);
+    loadDashboard();
   }, [adminUser, loadDashboard]);
 
   const usersDelta = useMemo(() => deltaFromPrevious(usersTrend), [usersTrend]);
@@ -172,12 +165,6 @@ const AdminShell = () => {
       onToggleTheme={toggleTheme}
       searchValue=""
       onSearchChange={null}
-      topbarActions={(
-        <Button size="sm" variant="secondary" onClick={() => loadDashboard(true)} disabled={refreshing}>
-          <AppIcon name="refresh" size={14} />
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </Button>
-      )}
     >
       <Breadcrumbs items={[{ label: 'Admin' }]} />
 
@@ -185,7 +172,7 @@ const AdminShell = () => {
         <ErrorState
           title="Unable to load analytics"
           description={error}
-          onRetry={() => loadDashboard(true)}
+          onRetry={loadDashboard}
         />
       ) : null}
 

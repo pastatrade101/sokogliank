@@ -207,6 +207,7 @@ const HomeShell = () => {
     <AppShell
       pageTitle="Dashboard"
       pageDescription="Performance pulse, engagement, and next actions"
+      hideTopbarDescriptionOnMobile
       navItems={memberNavigation}
       profile={profile}
       onSignOut={signOut}
@@ -215,14 +216,12 @@ const HomeShell = () => {
       searchValue={searchValue}
       onSearchChange={setSearchValue}
       topbarActions={(
-        premiumActive ? (
-          <span className="status-badge success">Premium Active</span>
-        ) : (
+        !premiumActive ? (
           <Button variant="secondary" size="sm" to="/upgrade">
             <AppIcon name="upgrade" size={15} />
             Upgrade
           </Button>
-        )
+        ) : null
       )}
     >
       <Breadcrumbs

@@ -19,6 +19,7 @@ const AppShell = ({
   pageTitle,
   pageDescription,
   hideTopbarCopyOnMobile = false,
+  hideTopbarDescriptionOnMobile = false,
   hideSearchOnMobile = false,
   navItems,
   profile,
@@ -146,7 +147,7 @@ const AppShell = ({
               >
                 <span className="app-shell-nav-link-label">
                   <AppIcon name={item.icon} size={16} />
-                  {!sidebarCollapsed ? <span>{item.label}</span> : null}
+                  <span className="app-shell-nav-link-text">{item.label}</span>
                 </span>
                 {!sidebarCollapsed && item.badge ? <span className="app-shell-chip">{item.badge}</span> : null}
               </NavLink>
@@ -190,7 +191,9 @@ const AppShell = ({
               </Button>
               <div className={`app-shell-topbar-copy ${hideTopbarCopyOnMobile ? 'mobile-hidden' : ''}`.trim()}>
                 <h1 className="ui-card-title">{pageTitle}</h1>
-                <p className="ui-card-subtitle">{pageDescription}</p>
+                <p className={`ui-card-subtitle ${hideTopbarDescriptionOnMobile ? 'mobile-hidden' : ''}`.trim()}>
+                  {pageDescription}
+                </p>
               </div>
             </div>
 
@@ -270,6 +273,10 @@ const AppShell = ({
                 <p className="profile-modal-kicker">
                   {premiumActive ? 'Premium access enabled' : 'Member account'}
                 </p>
+                <span className={`profile-modal-status-chip ${premiumActive ? 'is-premium' : ''}`.trim()}>
+                  <AppIcon name={premiumActive ? 'crown' : 'star'} size={12} />
+                  {premiumActive ? 'Premium detected' : 'Free plan'}
+                </span>
               </div>
             </div>
 
@@ -277,10 +284,6 @@ const AppShell = ({
               <span className="profile-modal-pill">
                 <AppIcon name="user" size={13} />
                 {humanize(role)}
-              </span>
-              <span className={`profile-modal-pill ${premiumActive ? 'is-premium' : ''}`.trim()}>
-                <AppIcon name={premiumActive ? 'crown' : 'star'} size={13} />
-                {premiumActive ? 'Premium Active' : 'Free Plan'}
               </span>
               <span className="profile-modal-pill">
                 <AppIcon name="clock" size={13} />
