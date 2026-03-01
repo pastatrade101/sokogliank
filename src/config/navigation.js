@@ -3,6 +3,7 @@ export const memberNavigation = [
   { to: '/signals', label: 'Signals', icon: 'signal' },
   { to: '/sessions', label: 'Sessions', icon: 'clock' },
   { to: '/tips', label: 'Tips', icon: 'tips' },
+  { to: '/testimonials', label: 'Testimonials', icon: 'message' },
   { to: '/upgrade', label: 'Upgrade', icon: 'upgrade' },
 ];
 
@@ -10,6 +11,7 @@ export const traderAdminNavigation = [
   { to: '/signals', label: 'Signals', icon: 'signal', end: true },
   { to: '/sessions', label: 'Sessions', icon: 'clock' },
   { to: '/tips', label: 'Tips', icon: 'tips' },
+  { to: '/testimonials', label: 'Testimonials', icon: 'message' },
 ];
 
 export const appRoutes = [
@@ -36,6 +38,12 @@ export const appRoutes = [
     section: 'tips',
     title: 'Trader Tips',
     description: 'Actionable lessons and market context',
+  },
+  {
+    path: '/testimonials',
+    section: 'testimonials',
+    title: 'Testimonials',
+    description: 'Member reviews, proof, and trading outcomes',
   },
   {
     path: '/upgrade',

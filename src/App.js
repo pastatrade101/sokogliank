@@ -7,6 +7,7 @@ import AdminShell from './components/AdminShell';
 import SignalsPage from './components/SignalsPage';
 import SessionsPage from './components/SessionsPage';
 import TipsPage from './components/TipsPage';
+import TestimonialsPage from './components/TestimonialsPage';
 import AdminUserManagementPage from './components/AdminUserManagementPage';
 import AdminContentManagementPage from './components/AdminContentManagementPage';
 import AdminRevenuePage from './components/AdminRevenuePage';
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/signals" element={<AuthGate><SignalsPage /></AuthGate>} />
                 <Route path="/sessions" element={<AuthGate><SessionsPage /></AuthGate>} />
                 <Route path="/tips" element={<AuthGate><TipsPage /></AuthGate>} />
+                <Route path="/testimonials" element={<AuthGate><TestimonialsPage /></AuthGate>} />
                 <Route path="/upgrade" element={<AuthGate><PremiumUpgradePage /></AuthGate>} />
                 <Route path="/terms" element={<PolicyPage />} />
                 <Route path="/privacy" element={<PolicyPage />} />

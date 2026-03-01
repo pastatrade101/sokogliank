@@ -6,4 +6,5 @@ export const adminNavigation = [
   { to: '/admin/notifications', label: 'Notifications', icon: 'bell' },
   { to: '/signals', label: 'Signals', icon: 'signal' },
   { to: '/tips', label: 'Tips', icon: 'tips' },
+  { to: '/testimonials', label: 'Testimonials', icon: 'message' },
 ];

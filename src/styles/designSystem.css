@@ -528,15 +528,22 @@ textarea {
 
 .ui-stat-card-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: var(--space-3);
   color: var(--color-text-muted);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
+.ui-stat-card-label {
+  min-width: 0;
+  line-height: 1.35;
+}
+
 .ui-stat-card-top svg {
+  flex: 0 0 auto;
   width: 18px;
   height: 18px;
   padding: 6px;
@@ -546,23 +553,43 @@ textarea {
   color: color-mix(in srgb, var(--color-primary) 78%, var(--color-text));
 }
 
+.ui-stat-card-meta {
+  display: grid;
+  gap: 10px;
+}
+
 .ui-stat-card-value {
   margin: 0;
   font-size: clamp(22px, 2.7vw, 30px);
   line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 .ui-stat-trend {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+  background: color-mix(in srgb, var(--color-surface-muted) 84%, transparent);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .ui-stat-trend.positive {
   color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
 }
 
 .ui-stat-trend.negative {
   color: var(--color-error);
+  border-color: color-mix(in srgb, var(--color-error) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
 }
 
 .ui-button {
@@ -1111,6 +1138,34 @@ textarea {
   position: relative;
   display: grid;
   gap: var(--space-2);
+  height: 240px;
+  min-height: 240px;
+  padding: 10px 10px 2px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
+  border-radius: calc(var(--radius-lg) + 2px);
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 94%, transparent), color-mix(in srgb, var(--color-surface-muted) 78%, transparent));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 86%, #fff),
+    0 1px 0 color-mix(in srgb, var(--color-shadow-tint) 10%, transparent);
+}
+
+.ui-bar-chart {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  height: 260px;
+  min-height: 260px;
+  padding: 10px 10px 2px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
+  border-radius: calc(var(--radius-lg) + 2px);
+  background:
+    radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 94%, transparent), color-mix(in srgb, var(--color-surface-muted) 78%, transparent));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 86%, #fff),
+    0 1px 0 color-mix(in srgb, var(--color-shadow-tint) 10%, transparent);
 }
 
 .ui-trend-svg {
@@ -1161,31 +1216,61 @@ textarea {
 }
 
 .ui-trend-tooltip {
-  position: absolute;
-  transform: translate(-50%, -100%);
-  min-width: 74px;
-  max-width: 140px;
-  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+  min-width: 112px;
+  max-width: 240px;
+  border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 38%),
+    color-mix(in srgb, var(--color-surface) 96%, transparent);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
-  padding: 8px 10px;
-  pointer-events: none;
-  z-index: 1;
+  box-shadow: 0 18px 40px rgba(13, 21, 38, 0.16);
+  padding: 10px 12px;
 }
 
 .ui-trend-tooltip p {
   margin: 0;
   font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--color-text-muted);
 }
 
 .ui-trend-tooltip strong {
-  margin-top: 2px;
   display: block;
   font-size: 14px;
   line-height: 1.2;
+}
+
+.ui-trend-tooltip-stack {
+  min-width: 168px;
+}
+
+.ui-trend-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-trend-tooltip-row + .ui-trend-tooltip-row {
+  margin-top: 6px;
+}
+
+.ui-trend-tooltip-series {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ui-bar-tooltip span {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .ui-trend-chart.tone-success .ui-trend-area {

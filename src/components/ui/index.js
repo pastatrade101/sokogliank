@@ -19,3 +19,4 @@ export { default as SkeletonLoader } from './SkeletonLoader';
 export { default as FiltersPanel } from './FiltersPanel';
 export { default as SearchBar } from './SearchBar';
 export { default as TrendChart } from './TrendChart';
+export { default as BarChart } from './BarChart';

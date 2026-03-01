@@ -17,7 +17,15 @@ import { Button, Card, Input } from './ui';
 
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 760px)';
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,24}$/;
-const ADMIN_NON_DASHBOARD_ALLOWED_ROUTES = new Set(['/signals', '/tips', '/terms', '/privacy', '/risk-disclaimer']);
+const ADMIN_NON_DASHBOARD_ALLOWED_ROUTES = new Set([
+  '/signals',
+  '/sessions',
+  '/tips',
+  '/testimonials',
+  '/terms',
+  '/privacy',
+  '/risk-disclaimer',
+]);
 
 const AuthGate = ({ children }) => {
   const { sessionStatus, user, profile, resendVerification, refreshProfile, error } = useAuth();

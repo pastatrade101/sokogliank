@@ -6,11 +6,13 @@ const StatCard = ({ label, value, trend, trendDirection = 'neutral', icon = 'cha
   return (
     <Card className="ui-stat-card" hover>
       <div className="ui-stat-card-top">
-        <span>{label}</span>
+        <span className="ui-stat-card-label">{label}</span>
         <AppIcon name={icon} size={16} />
       </div>
-      <p className="ui-stat-card-value">{value}</p>
-      {trend ? <span className={cx('ui-stat-trend', trendDirection)}>{trend}</span> : null}
+      <div className="ui-stat-card-meta">
+        <p className="ui-stat-card-value">{value}</p>
+        {trend ? <span className={cx('ui-stat-trend', trendDirection)}>{trend}</span> : null}
+      </div>
     </Card>
   );
 };
