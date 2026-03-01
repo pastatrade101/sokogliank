@@ -11,7 +11,7 @@ import {
 import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
 import { firestore } from '../firebase/init';
-import { adminNavigation } from '../config/adminNavigation';
+import { getAdminNavItems } from '../config/adminNavigation';
 import { isAdmin } from '../utils/roleHelpers';
 import { formatDateTime, timestampToDate } from '../utils/tradingData';
 import {
@@ -123,7 +123,7 @@ const AdminContentManagementPage = () => {
     <AppShell
       pageTitle="Content Management"
       pageDescription="Moderate signals, tips, and editorial highlights"
-      navItems={adminNavigation}
+      navItems={getAdminNavItems(profile?.role)}
       profile={profile}
       onSignOut={signOut}
       theme={theme}

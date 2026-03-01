@@ -10,7 +10,7 @@ import {
 import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
 import { firestore } from '../firebase/init';
-import { adminNavigation } from '../config/adminNavigation';
+import { getAdminNavItems } from '../config/adminNavigation';
 import { normalizeMembership } from '../utils/membershipHelpers';
 import { isAdmin } from '../utils/roleHelpers';
 import { formatDateTime, timestampToDate } from '../utils/tradingData';
@@ -329,7 +329,7 @@ const AdminUserManagementPage = () => {
     <AppShell
       pageTitle="User Management"
       pageDescription="Manage users, roles, and membership quality at scale"
-      navItems={adminNavigation}
+      navItems={getAdminNavItems(profile?.role)}
       profile={profile}
       onSignOut={signOut}
       theme={theme}

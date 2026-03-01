@@ -12,9 +12,9 @@ import {
 import { useTheme } from '../contexts/themeContext';
 import { useAuth } from '../contexts/authContext';
 import { firestore } from '../firebase/init';
-import { isAdminOrTraderAdmin, isTraderAdmin } from '../utils/roleHelpers';
+import { isAdminOrTraderAdmin } from '../utils/roleHelpers';
 import { getSignalSessionBucket, normalizeSignal, timestampToDate } from '../utils/tradingData';
-import { adminNavigation } from '../config/adminNavigation';
+import { getAdminNavItems } from '../config/adminNavigation';
 import {
   AppShell,
   BarChart,
@@ -42,11 +42,7 @@ const AdminShell = () => {
   const { profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const adminUser = isAdminOrTraderAdmin(profile?.role);
-  const traderAdminUser = isTraderAdmin(profile?.role);
-  const dashboardNavItems = useMemo(
-    () => adminNavigation.filter((item) => !(traderAdminUser && item.to === '/admin/users')),
-    [traderAdminUser],
-  );
+  const dashboardNavItems = useMemo(() => getAdminNavItems(profile?.role), [profile?.role]);
   const [signalQualityTab, setSignalQualityTab] = useState('session');
   const [summary, setSummary] = useState({
     totalUsers: 0,

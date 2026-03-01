@@ -12,6 +12,7 @@ import AdminUserManagementPage from './components/AdminUserManagementPage';
 import AdminContentManagementPage from './components/AdminContentManagementPage';
 import AdminRevenuePage from './components/AdminRevenuePage';
 import AdminNotificationPage from './components/AdminNotificationPage';
+import AdminSlidersPage from './components/AdminSlidersPage';
 import AuthGate from './components/AuthGate';
 import PolicyPage from './components/PolicyPage';
 import PremiumUpgradePage from './components/PremiumUpgradePage';
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/admin" element={<AuthGate><AdminShell /></AuthGate>} />
                 <Route path="/admin/users" element={<AuthGate><AdminUserManagementPage /></AuthGate>} />
                 <Route path="/admin/content" element={<AuthGate><AdminContentManagementPage /></AuthGate>} />
+                <Route path="/admin/sliders" element={<AuthGate><AdminSlidersPage /></AuthGate>} />
                 <Route path="/admin/revenue" element={<AuthGate><AdminRevenuePage /></AuthGate>} />
                 <Route path="/admin/notifications" element={<AuthGate><AdminNotificationPage /></AuthGate>} />
                 <Route path="/signals" element={<AuthGate><SignalsPage /></AuthGate>} />
@@ -40,6 +42,7 @@ function App() {
                 <Route path="/upgrade" element={<AuthGate><PremiumUpgradePage /></AuthGate>} />
                 <Route path="/terms" element={<PolicyPage />} />
                 <Route path="/privacy" element={<PolicyPage />} />
+                <Route path="/agreement" element={<PolicyPage />} />
                 <Route path="/risk-disclaimer" element={<PolicyPage />} />
               </Routes>
             </BrowserRouter>

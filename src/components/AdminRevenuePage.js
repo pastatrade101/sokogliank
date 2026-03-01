@@ -12,8 +12,8 @@ import {
 import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
 import { firestore } from '../firebase/init';
-import { adminNavigation } from '../config/adminNavigation';
-import { isAdminOrTraderAdmin, isTraderAdmin } from '../utils/roleHelpers';
+import { getAdminNavItems } from '../config/adminNavigation';
+import { isAdminOrTraderAdmin } from '../utils/roleHelpers';
 import { formatDateTime, timestampToDate } from '../utils/tradingData';
 import {
   AppShell,
@@ -50,11 +50,7 @@ const AdminRevenuePage = () => {
   const { theme, toggleTheme } = useTheme();
   const { pushToast } = useToast();
   const adminUser = isAdminOrTraderAdmin(profile?.role);
-  const traderAdminUser = isTraderAdmin(profile?.role);
-  const revenueNavItems = useMemo(
-    () => adminNavigation.filter((item) => !(traderAdminUser && item.to === '/admin/users')),
-    [traderAdminUser],
-  );
+  const revenueNavItems = useMemo(() => getAdminNavItems(profile?.role), [profile?.role]);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [trendRange, setTrendRange] = useState('daily');

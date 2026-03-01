@@ -1,13 +1,31 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
+import { firestore } from '../firebase/init';
 import { Button, Input, Modal } from './ui';
 import AppIcon from './icons/AppIcon';
 import { isAdmin, isTrader } from '../utils/roleHelpers';
 
 const REMEMBER_EMAIL_KEY = 'sokogliank.remembered_email';
 const REMEMBER_PREFERENCE_KEY = 'sokogliank.remember_preference';
+const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.marketresolve.app';
+const AUTH_SHOWCASE_SLIDES = [
+  {
+    image: '/2141.jpg',
+    chip: 'Professional Trader Workspace',
+    title: 'A disciplined workspace for smarter trade execution.',
+    subtitle: 'Track premium signals, review session timing, and stay inside one focused trading workflow.',
+  },
+  {
+    image: '/slider2.jpg',
+    chip: 'Centralized Market Intelligence',
+    title: 'Move from insight to execution without leaving your desk.',
+    subtitle: 'Follow analysis, validate trader activity, and keep premium operations visible in one dashboard.',
+  },
+];
 
 const LoginScreen = () => {
   const { signIn, signInWithGoogle, requestPasswordReset, error, sessionStatus } = useAuth();
@@ -21,6 +39,8 @@ const LoginScreen = () => {
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
   const [showResetSentModal, setShowResetSentModal] = useState(false);
+  const [activeShowcaseSlide, setActiveShowcaseSlide] = useState(0);
+  const [showcaseSlides, setShowcaseSlides] = useState(AUTH_SHOWCASE_SLIDES);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -35,6 +55,44 @@ const LoginScreen = () => {
       setRememberMe(true);
     }
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(firestore, 'login_sliders'),
+      (snapshot) => {
+        const remoteSlides = snapshot.docs
+          .map((docSnap) => normalizeShowcaseSlide(docSnap.data() ?? {}))
+          .sort(compareLoginSlides)
+          .filter((slide) => slide.isActive && slide.image);
+        setShowcaseSlides(remoteSlides.length ? remoteSlides : AUTH_SHOWCASE_SLIDES);
+      },
+      () => {
+        setShowcaseSlides(AUTH_SHOWCASE_SLIDES);
+      },
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!showcaseSlides.length) {
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setActiveShowcaseSlide((current) => (current + 1) % showcaseSlides.length);
+    }, 4800);
+
+    return () => window.clearInterval(timer);
+  }, [showcaseSlides.length]);
+
+  useEffect(() => {
+    setActiveShowcaseSlide((current) => {
+      if (current < showcaseSlides.length) {
+        return current;
+      }
+      return 0;
+    });
+  }, [showcaseSlides.length]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -79,6 +137,8 @@ const LoginScreen = () => {
       setResetSubmitting(false);
     }
   };
+
+  const showcaseSlide = showcaseSlides[activeShowcaseSlide] || AUTH_SHOWCASE_SLIDES[0];
 
   return (
     <main className="auth-layout">
@@ -135,7 +195,6 @@ const LoginScreen = () => {
                 </span>
                 <span className="auth-remember-copy">
                   <strong>Remember me</strong>
-                  <span>Keep this device signed in and prefill your email next time.</span>
                 </span>
               </label>
               <button
@@ -157,6 +216,7 @@ const LoginScreen = () => {
                 onClick={handleGoogleSignIn}
                 disabled={googleSubmitting || sessionStatus === 'loading'}
               >
+                <GoogleMark />
                 {googleSubmitting ? 'Opening Google...' : 'Continue with Google'}
               </Button>
             </div>
@@ -164,38 +224,67 @@ const LoginScreen = () => {
             {error ? <p className="error-text">{error}</p> : null}
           </form>
 
-          <p className="auth-legal">By continuing, you agree to platform risk and compliance policies.</p>
+          <p className="auth-legal">
+            By continuing, you acknowledge our
+            {' '}
+            <Link to="/privacy">Privacy Policy</Link>
+            {' '}
+            and
+            {' '}
+            <Link to="/agreement">User Agreement</Link>
+            . Prefer mobile?
+            {' '}
+            <a href={ANDROID_APP_URL} target="_blank" rel="noreferrer">
+              Get the Android app
+            </a>
+            .
+          </p>
         </div>
 
         <aside className="auth-showcase">
-          <div
-            className="auth-showcase-overlay"
-            style={{ '--auth-showcase-image': `url(${process.env.PUBLIC_URL || ''}/2141.jpg)` }}
-          />
+          <div className="auth-showcase-slider">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={showcaseSlide.title}
+                className="auth-showcase-slide"
+                initial={{ opacity: 0, scale: 1.03 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.015 }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div
+                  className="auth-showcase-overlay"
+                  style={{ '--auth-showcase-image': `url(${resolveShowcaseImage(showcaseSlide.image)})` }}
+                />
 
-          <div className="auth-showcase-content">
-            <span className="auth-intro-chip">
-              <AppIcon name="sparkles" size={13} />
-              Professional Trader Workspace
-            </span>
+                <div className="auth-showcase-content">
+                  <span className="auth-intro-chip">
+                    <AppIcon name="sparkles" size={13} />
+                    {showcaseSlide.chip}
+                  </span>
 
-            <div className="auth-intro-brand">
-              <div>
-                <p className="auth-intro-brand-name">Welcome to Soko Gliank</p>
-                <p className="auth-intro-brand-copy">Trade with clarity. Execute with confidence.</p>
+                  <div className="auth-intro-copy-block">
+                    <h2 className="auth-intro-title">{showcaseSlide.title}</h2>
+                    <p className="auth-intro-body">{showcaseSlide.subtitle}</p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {showcaseSlides.length > 1 ? (
+              <div className="auth-showcase-dots" aria-label="Login showcase slides">
+                {showcaseSlides.map((slide, index) => (
+                  <button
+                    key={slide.title}
+                    type="button"
+                    className={`auth-showcase-dot ${index === activeShowcaseSlide ? 'active' : ''}`.trim()}
+                    onClick={() => setActiveShowcaseSlide(index)}
+                    aria-label={`Show slide ${index + 1}`}
+                    aria-pressed={index === activeShowcaseSlide}
+                  />
+                ))}
               </div>
-            </div>
-
-            <h2 className="auth-intro-title">A disciplined workspace for smarter trade execution.</h2>
-            <p className="auth-intro-body">
-              Monitor signals, review session timing, follow curated analysis, and keep premium operations centralized in one place.
-            </p>
-
-            <div className="auth-intro-points">
-              <p><AppIcon name="check" size={14} /> Live signal tracking with clear risk levels</p>
-              <p><AppIcon name="check" size={14} /> Curated trader tips with actionable context</p>
-              <p><AppIcon name="check" size={14} /> Premium plan controls with transparent status</p>
-            </div>
+            ) : null}
           </div>
         </aside>
       </section>
@@ -244,4 +333,65 @@ function persistRememberPreference(email, remember) {
     return;
   }
   window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+}
+
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.58 2.68-3.9 2.68-6.62Z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.85.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.97 10.72A5.41 5.41 0 0 1 3.69 9c0-.6.1-1.18.28-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.5.46 3.43 1.36l2.57-2.57C13.46.94 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33c.71-2.12 2.7-3.7 5.03-3.7Z"
+      />
+    </svg>
+  );
+}
+
+function normalizeShowcaseSlide(data) {
+  return {
+    image: String(data.imageUrl || data.image || data.url || data.image_path || '').trim(),
+    chip: String(data.chip || 'Professional Trader Workspace').trim(),
+    title: String(data.title || '').trim(),
+    subtitle: String(data.subtitle || '').trim(),
+    isActive: data.isActive !== false && String(data.status || 'active').toLowerCase() !== 'hidden',
+    order: Number.isFinite(Number(data.order)) ? Number(data.order) : 9999,
+    updatedAtMs: toTimestampMs(data.updatedAt),
+  };
+}
+
+function resolveShowcaseImage(value) {
+  const image = String(value || '').trim();
+  if (!image) {
+    return '';
+  }
+  if (/^(https?:|data:|blob:)/i.test(image)) {
+    return image;
+  }
+  return `${process.env.PUBLIC_URL || ''}${image.startsWith('/') ? image : `/${image}`}`;
+}
+
+function compareLoginSlides(left, right) {
+  if (left.order !== right.order) {
+    return left.order - right.order;
+  }
+  return right.updatedAtMs - left.updatedAtMs;
+}
+
+function toTimestampMs(value) {
+  if (value?.toDate instanceof Function) {
+    return value.toDate().getTime();
+  }
+  const date = value instanceof Date ? value : null;
+  return date ? date.getTime() : 0;
 }

@@ -1,7 +1,10 @@
 import './AppFooter.css';
 import { Link } from 'react-router-dom';
 
+const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.marketresolve.app';
+
 const socialLinks = [
+  { label: 'Android App', href: ANDROID_APP_URL },
   { label: 'X', href: 'https://x.com' },
   { label: 'Telegram', href: 'https://t.me' },
   { label: 'Instagram', href: 'https://instagram.com' },
@@ -11,6 +14,7 @@ const socialLinks = [
 ];
 
 const policyLinks = [
+  { label: 'User Agreement', to: '/agreement' },
   { label: 'Terms & Conditions', to: '/terms' },
   { label: 'Privacy Policy', to: '/privacy' },
   { label: 'Risk Disclaimer', to: '/risk-disclaimer' },

@@ -5,7 +5,7 @@ import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
 import { firestore, firebaseFunctions } from '../firebase/init';
-import { adminNavigation } from '../config/adminNavigation';
+import { getAdminNavItems } from '../config/adminNavigation';
 import { isAdmin } from '../utils/roleHelpers';
 import {
   AppShell,
@@ -159,7 +159,7 @@ const AdminNotificationPage = () => {
     <AppShell
       pageTitle="Notifications"
       pageDescription="Send custom push notifications to all users or selected users"
-      navItems={adminNavigation}
+      navItems={getAdminNavItems(profile?.role)}
       profile={profile}
       onSignOut={signOut}
       theme={theme}
