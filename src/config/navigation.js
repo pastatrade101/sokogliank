@@ -8,6 +8,8 @@ export const memberNavigation = [
 ];
 
 export const traderAdminNavigation = [
+  { to: '/admin', label: 'Dashboard', icon: 'home' },
+  { to: '/admin/revenue', label: 'Revenue', icon: 'payments' },
   { to: '/signals', label: 'Signals', icon: 'signal', end: true },
   { to: '/sessions', label: 'Sessions', icon: 'clock' },
   { to: '/tips', label: 'Tips', icon: 'tips' },

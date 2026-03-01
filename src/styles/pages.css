@@ -352,10 +352,117 @@
   color: var(--color-text-muted);
 }
 
+.tips-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .tips-control-grid {
   display: grid;
   grid-template-columns: 1.35fr 0.65fr;
   gap: var(--space-4);
+}
+
+.tips-compose-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.tips-compose-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.tips-compose-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tips-compose-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.tips-compose-section-head p,
+.tips-compose-section-head span {
+  margin: 0;
+  font-size: 12px;
+}
+
+.tips-compose-section-head p {
+  font-weight: 700;
+}
+
+.tips-compose-section-head span {
+  color: var(--color-text-muted);
+}
+
+.tips-compose-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tips-compose-tag {
+  min-height: 34px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface-muted) 80%, transparent);
+  color: var(--color-text);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    background var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
+}
+
+.tips-compose-tag.active {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 86%, var(--color-text));
+}
+
+.tips-compose-image-preview {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.tips-compose-image-preview img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.tips-compose-actions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.tips-upload-input {
+  display: none;
+}
+
+.tips-upload-button {
+  cursor: pointer;
+}
+
+.tips-compose-submit-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .tips-pill-cloud {
@@ -2755,6 +2862,23 @@
   .testimonials-topbar-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .tips-topbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .tips-compose-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tips-compose-submit-row {
+    justify-content: stretch;
+  }
+
+  .tips-compose-submit-row .ui-button {
+    flex: 1 1 0;
   }
 
   .testimonial-compose-actions {

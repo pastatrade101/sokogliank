@@ -2,14 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   collection,
+  doc,
   documentId,
   getDocs,
   limit as limitQuery,
   onSnapshot,
   orderBy,
   query,
+  serverTimestamp,
+  setDoc,
   where,
 } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { firestore } from '../firebase/init';
 import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
@@ -23,22 +27,33 @@ import {
   EmptyState,
   ErrorState,
   FiltersPanel,
+  Input,
+  Modal,
+  Select,
   SkeletonLoader,
   Tabs,
+  Textarea,
   Toggle,
+  useToast,
 } from './ui';
 import { memberNavigation, traderAdminNavigation } from '../config/navigation';
 import { adminNavigation } from '../config/adminNavigation';
 import { formatDate, isCurrentDay, normalizeTip, TIP_TYPES } from '../utils/tradingData';
 import AppIcon from './icons/AppIcon';
+import { storage } from '../firebase/init';
+
+const TIP_TAG_OPTIONS = ['XAUUSD', 'Forex', 'Crypto', 'Indices', 'London', 'New York', 'Asia'];
+const MAX_TIP_TAGS = 4;
 
 const TipsPage = () => {
   const { sessionStatus, profile, user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { pinnedTips, togglePinnedTip } = useEngagementStore();
+  const { pushToast } = useToast();
   const adminUser = isAdmin(profile?.role);
   const traderUser = isTrader(profile?.role);
   const navItems = adminUser ? adminNavigation : (traderUser ? traderAdminNavigation : memberNavigation);
+  const canPostTips = traderUser && String(profile?.traderStatus || '').toLowerCase() === 'active';
 
   const [activeTab, setActiveTab] = useState('featured');
   const [selectedType, setSelectedType] = useState('All');
@@ -51,6 +66,22 @@ const TipsPage = () => {
   const [latestError, setLatestError] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const [authorAvatars, setAuthorAvatars] = useState({});
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeSubmitting, setComposeSubmitting] = useState(false);
+  const [tipTitle, setTipTitle] = useState('');
+  const [tipType, setTipType] = useState(TIP_TYPES[0]);
+  const [tipContent, setTipContent] = useState('');
+  const [tipAction, setTipAction] = useState('');
+  const [tipTags, setTipTags] = useState([]);
+  const [tipImageFile, setTipImageFile] = useState(null);
+  const [tipImagePreview, setTipImagePreview] = useState('');
+  const [composeError, setComposeError] = useState('');
+
+  useEffect(() => () => {
+    if (tipImagePreview) {
+      URL.revokeObjectURL(tipImagePreview);
+    }
+  }, [tipImagePreview]);
 
   useEffect(() => {
     const featuredQuery = query(
@@ -206,10 +237,18 @@ const TipsPage = () => {
       searchValue={searchValue}
       onSearchChange={setSearchValue}
       topbarActions={(
-        <Button variant="secondary" size="sm" to="/signals">
-          <AppIcon name="signal" size={14} />
-          Back to Signals
-        </Button>
+        <div className="tips-topbar-actions">
+          {canPostTips ? (
+            <Button variant="primary" size="sm" onClick={() => setComposeOpen(true)}>
+              <AppIcon name="sparkles" size={14} />
+              Post Tip
+            </Button>
+          ) : null}
+          <Button variant="secondary" size="sm" to="/signals">
+            <AppIcon name="signal" size={14} />
+            Back to Signals
+          </Button>
+        </div>
       )}
     >
       <Breadcrumbs
@@ -443,6 +482,235 @@ const TipsPage = () => {
           })}
         </section>
       )}
+
+      <Modal
+        open={composeOpen}
+        title="Post Trader Tip"
+        onClose={() => {
+          if (!composeSubmitting) {
+            resetTipComposer({
+              setComposeOpen,
+              setComposeError,
+              setTipTitle,
+              setTipType,
+              setTipContent,
+              setTipAction,
+              setTipTags,
+              setTipImageFile,
+              setTipImagePreview,
+            });
+          }
+        }}
+      >
+        <form
+          className="tips-compose-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
+          <div className="tips-compose-grid">
+            <Input
+              id="tip-title"
+              label="Title"
+              value={tipTitle}
+              onChange={(event) => setTipTitle(event.target.value)}
+              hint={`${tipTitle.trim().length}/80 characters`}
+              maxLength={80}
+            />
+            <Select
+              id="tip-type"
+              label="Type"
+              value={tipType}
+              onChange={(event) => setTipType(event.target.value)}
+              options={TIP_TYPES.map((entry) => ({ value: entry, label: entry }))}
+            />
+          </div>
+
+          <Textarea
+            id="tip-content"
+            label="Content"
+            value={tipContent}
+            onChange={(event) => setTipContent(event.target.value)}
+            hint={`${tipContent.trim().length}/400 characters`}
+            maxLength={400}
+            rows={6}
+          />
+
+          <Input
+            id="tip-action"
+            label="Action"
+            value={tipAction}
+            onChange={(event) => setTipAction(event.target.value)}
+            hint={`${tipAction.trim().length}/120 characters`}
+            maxLength={120}
+          />
+
+          <div className="tips-compose-section">
+            <div className="tips-compose-section-head">
+              <p>Tags / Markets</p>
+              <span>{tipTags.length}/{MAX_TIP_TAGS}</span>
+            </div>
+            <div className="tips-compose-tags">
+              {TIP_TAG_OPTIONS.map((tag) => {
+                const selected = tipTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={`tips-compose-tag ${selected ? 'active' : ''}`.trim()}
+                    onClick={() => {
+                      setComposeError('');
+                      setTipTags((current) => {
+                        if (current.includes(tag)) {
+                          return current.filter((entry) => entry !== tag);
+                        }
+                        if (current.length >= MAX_TIP_TAGS) {
+                          pushToast({
+                            type: 'error',
+                            title: 'Tag limit reached',
+                            message: 'Limit tags to four, same as the mobile app.',
+                          });
+                          return current;
+                        }
+                        return [...current, tag];
+                      });
+                    }}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="tips-compose-section">
+            <div className="tips-compose-section-head">
+              <p>Optional image</p>
+              <span>JPG or PNG, under 5MB</span>
+            </div>
+            {tipImagePreview ? (
+              <div className="tips-compose-image-preview">
+                <img src={tipImagePreview} alt="Tip preview" />
+              </div>
+            ) : null}
+            <div className="tips-compose-actions-row">
+              <label className="ui-button secondary tips-upload-button" htmlFor="tip-image-upload">
+                <AppIcon name="sparkles" size={14} />
+                {tipImagePreview ? 'Replace Image' : 'Add Image'}
+              </label>
+              <input
+                id="tip-image-upload"
+                type="file"
+                accept="image/png,image/jpeg"
+                className="tips-upload-input"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  if (!file) {
+                    return;
+                  }
+                  const validationMessage = validateTipImage(file);
+                  if (validationMessage) {
+                    setComposeError(validationMessage);
+                    return;
+                  }
+                  if (tipImagePreview) {
+                    URL.revokeObjectURL(tipImagePreview);
+                  }
+                  setComposeError('');
+                  setTipImageFile(file);
+                  setTipImagePreview(URL.createObjectURL(file));
+                }}
+              />
+              {tipImagePreview ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (tipImagePreview) {
+                      URL.revokeObjectURL(tipImagePreview);
+                    }
+                    setTipImageFile(null);
+                    setTipImagePreview('');
+                  }}
+                >
+                  Remove
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
+          {composeError ? <p className="error-text">{composeError}</p> : null}
+
+          <div className="tips-compose-submit-row">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={composeSubmitting}
+              onClick={() => submitTip({
+                status: 'draft',
+                user,
+                profile,
+                tipTitle,
+                tipType,
+                tipContent,
+                tipAction,
+                tipTags,
+                tipImageFile,
+                pushToast,
+                setComposeError,
+                setComposeSubmitting,
+                onSuccess: () => resetTipComposer({
+                  setComposeOpen,
+                  setComposeError,
+                  setTipTitle,
+                  setTipType,
+                  setTipContent,
+                  setTipAction,
+                  setTipTags,
+                  setTipImageFile,
+                  setTipImagePreview,
+                }),
+              })}
+            >
+              {composeSubmitting ? 'Saving...' : 'Save Draft'}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={composeSubmitting}
+              onClick={() => submitTip({
+                status: 'published',
+                user,
+                profile,
+                tipTitle,
+                tipType,
+                tipContent,
+                tipAction,
+                tipTags,
+                tipImageFile,
+                pushToast,
+                setComposeError,
+                setComposeSubmitting,
+                onSuccess: () => resetTipComposer({
+                  setComposeOpen,
+                  setComposeError,
+                  setTipTitle,
+                  setTipType,
+                  setTipContent,
+                  setTipAction,
+                  setTipTags,
+                  setTipImageFile,
+                  setTipImagePreview,
+                }),
+              })}
+            >
+              {composeSubmitting ? 'Publishing...' : 'Publish'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </AppShell>
   );
 };
@@ -482,4 +750,141 @@ function initialsFor(name) {
   }
   const segments = value.split(/\s+/).filter(Boolean).slice(0, 2);
   return segments.map((segment) => segment[0].toUpperCase()).join('');
+}
+
+function validateTipPayload({ title, content, action }) {
+  const safeTitle = String(title || '').trim();
+  const safeContent = String(content || '').trim();
+  const safeAction = String(action || '').trim();
+
+  if (!safeTitle || safeTitle.length > 80) {
+    return 'Title is required and must be 80 characters or less.';
+  }
+  if (!safeContent || safeContent.length > 400) {
+    return 'Content is required and must be 400 characters or less.';
+  }
+  if (!safeAction || safeAction.length > 120) {
+    return 'Action is required and must be 120 characters or less.';
+  }
+  return '';
+}
+
+function validateTipImage(file) {
+  const extension = (file.name.split('.').pop() || '').toLowerCase();
+  if (!['jpg', 'jpeg', 'png'].includes(extension)) {
+    return 'Only JPG or PNG images are allowed.';
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return 'Image must be under 5MB.';
+  }
+  return '';
+}
+
+async function submitTip({
+  status,
+  user,
+  profile,
+  tipTitle,
+  tipType,
+  tipContent,
+  tipAction,
+  tipTags,
+  tipImageFile,
+  pushToast,
+  setComposeError,
+  setComposeSubmitting,
+  onSuccess,
+}) {
+  const validationError = validateTipPayload({
+    title: tipTitle,
+    content: tipContent,
+    action: tipAction,
+  });
+  if (validationError) {
+    setComposeError(validationError);
+    return;
+  }
+
+  setComposeError('');
+  setComposeSubmitting(true);
+  try {
+    const tipRef = doc(collection(firestore, 'trader_tips'));
+    let imageUrl = '';
+    let imagePath = '';
+
+    if (tipImageFile) {
+      const upload = await uploadTipImageFile({ uid: user.uid, tipId: tipRef.id, file: tipImageFile });
+      imageUrl = upload.url;
+      imagePath = upload.path;
+    }
+
+    await setDoc(tipRef, {
+      title: tipTitle.trim(),
+      type: tipType,
+      content: tipContent.trim(),
+      action: tipAction.trim(),
+      tags: tipTags,
+      imageUrl,
+      imagePath,
+      status,
+      createdBy: user.uid,
+      authorName: String(profile?.displayName || profile?.username || user.displayName || user.email || 'Trader').trim(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      isFeatured: false,
+      likesCount: 0,
+      savesCount: 0,
+    });
+
+    pushToast({
+      type: 'success',
+      title: status === 'published' ? 'Tip published' : 'Draft saved',
+      message: status === 'published'
+        ? 'Your trader tip is now live on the feed.'
+        : 'Draft saved. Publish it when you are ready.',
+    });
+    onSuccess();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to save tip.';
+    setComposeError(message);
+    pushToast({ type: 'error', title: 'Save failed', message });
+  } finally {
+    setComposeSubmitting(false);
+  }
+}
+
+function resetTipComposer({
+  setComposeOpen,
+  setComposeError,
+  setTipTitle,
+  setTipType,
+  setTipContent,
+  setTipAction,
+  setTipTags,
+  setTipImageFile,
+  setTipImagePreview,
+}) {
+  setComposeOpen(false);
+  setComposeError('');
+  setTipTitle('');
+  setTipType(TIP_TYPES[0]);
+  setTipContent('');
+  setTipAction('');
+  setTipTags([]);
+  setTipImageFile(null);
+  setTipImagePreview((current) => {
+    if (current) {
+      URL.revokeObjectURL(current);
+    }
+    return '';
+  });
+}
+
+async function uploadTipImageFile({ uid, tipId, file }) {
+  const extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const storagePath = `tips/${uid}/${tipId}.${extension}`;
+  const fileRef = ref(storage, storagePath);
+  await uploadBytes(fileRef, file, { contentType: file.type || 'image/jpeg' });
+  const url = await getDownloadURL(fileRef);
+  return { url, path: storagePath };
 }

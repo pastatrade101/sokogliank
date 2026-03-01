@@ -13,7 +13,7 @@ import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
 import { firestore } from '../firebase/init';
 import { adminNavigation } from '../config/adminNavigation';
-import { isAdmin } from '../utils/roleHelpers';
+import { isAdminOrTraderAdmin, isTraderAdmin } from '../utils/roleHelpers';
 import { formatDateTime, timestampToDate } from '../utils/tradingData';
 import {
   AppShell,
@@ -49,7 +49,12 @@ const AdminRevenuePage = () => {
   const { profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { pushToast } = useToast();
-  const adminUser = isAdmin(profile?.role);
+  const adminUser = isAdminOrTraderAdmin(profile?.role);
+  const traderAdminUser = isTraderAdmin(profile?.role);
+  const revenueNavItems = useMemo(
+    () => adminNavigation.filter((item) => !(traderAdminUser && item.to === '/admin/users')),
+    [traderAdminUser],
+  );
 
   const [activeTab, setActiveTab] = useState('overview');
   const [trendRange, setTrendRange] = useState('daily');
@@ -418,7 +423,7 @@ const AdminRevenuePage = () => {
     <AppShell
       pageTitle="Revenue"
       pageDescription="Sales performance, subscriptions, and failed orders"
-      navItems={adminNavigation}
+      navItems={revenueNavItems}
       profile={profile}
       onSignOut={signOut}
       theme={theme}

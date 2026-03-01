@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../contexts/authContext';
 import { firestore } from '../firebase/init';
-import { isAdmin, isMember, isTrader } from '../utils/roleHelpers';
+import { isAdmin, isMember, isTrader, isTraderAdmin } from '../utils/roleHelpers';
 import { Button, Card, Input } from './ui';
 
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 760px)';
@@ -40,7 +40,9 @@ const AuthGate = ({ children }) => {
   const [formError, setFormError] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const isAdminRoute = pathname.startsWith('/admin');
+  const isAdminUsersRoute = pathname === '/admin/users';
   const adminUser = isAdmin(profile?.role);
+  const traderAdminUser = isTraderAdmin(profile?.role);
   const traderUser = isTrader(profile?.role);
   const adminAllowedRoute = isAdminRoute || ADMIN_NON_DASHBOARD_ALLOWED_ROUTES.has(pathname);
   const needsMobileProfileSetup = Boolean(
@@ -161,8 +163,11 @@ const AuthGate = ({ children }) => {
   if (!profile) {
     return <div className="screen-screen">Loading profile…</div>;
   }
-  if (isAdminRoute && !adminUser) {
+  if (isAdminRoute && !adminUser && !traderAdminUser) {
     return <Navigate to={traderUser ? '/signals' : '/'} replace />;
+  }
+  if (isAdminUsersRoute && traderAdminUser && !adminUser) {
+    return <Navigate to="/admin" replace />;
   }
   if (adminUser && !adminAllowedRoute) {
     return <Navigate to="/admin" replace />;

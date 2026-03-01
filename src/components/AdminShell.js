@@ -12,7 +12,7 @@ import {
 import { useTheme } from '../contexts/themeContext';
 import { useAuth } from '../contexts/authContext';
 import { firestore } from '../firebase/init';
-import { isAdmin } from '../utils/roleHelpers';
+import { isAdminOrTraderAdmin, isTraderAdmin } from '../utils/roleHelpers';
 import { getSignalSessionBucket, normalizeSignal, timestampToDate } from '../utils/tradingData';
 import { adminNavigation } from '../config/adminNavigation';
 import {
@@ -41,7 +41,12 @@ const SIGNAL_QUALITY_TABS = [
 const AdminShell = () => {
   const { profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const adminUser = isAdmin(profile?.role);
+  const adminUser = isAdminOrTraderAdmin(profile?.role);
+  const traderAdminUser = isTraderAdmin(profile?.role);
+  const dashboardNavItems = useMemo(
+    () => adminNavigation.filter((item) => !(traderAdminUser && item.to === '/admin/users')),
+    [traderAdminUser],
+  );
   const [signalQualityTab, setSignalQualityTab] = useState('session');
   const [summary, setSummary] = useState({
     totalUsers: 0,
@@ -211,7 +216,7 @@ const AdminShell = () => {
     <AppShell
       pageTitle="Admin Console"
       pageDescription="Premium conversion, payment health, signal quality, and expiry pressure"
-      navItems={adminNavigation}
+      navItems={dashboardNavItems}
       profile={profile}
       onSignOut={signOut}
       theme={theme}
@@ -1055,9 +1060,7 @@ function planLabel(productId) {
 }
 
 function weekWindowLabel(start) {
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { day: 'numeric' })}`;
+  return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function MetricChip({ icon, label, tone = 'primary' }) {
