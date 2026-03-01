@@ -1,25 +1,49 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/authContext';
 import { useTheme } from '../contexts/themeContext';
-import { Button, Input } from './ui';
+import { Button, Input, Modal } from './ui';
 import AppIcon from './icons/AppIcon';
 import { isAdmin, isTrader } from '../utils/roleHelpers';
 
+const REMEMBER_EMAIL_KEY = 'sokogliank.remembered_email';
+const REMEMBER_PREFERENCE_KEY = 'sokogliank.remember_preference';
+
 const LoginScreen = () => {
-  const { signIn, signInWithGoogle, error, sessionStatus } = useAuth();
+  const { signIn, signInWithGoogle, requestPasswordReset, error, sessionStatus } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+  const [showResetSentModal, setShowResetSentModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const savedEmail = window.localStorage.getItem(REMEMBER_EMAIL_KEY) || '';
+    const savedPreference = window.localStorage.getItem(REMEMBER_PREFERENCE_KEY) === 'true';
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+    if (savedEmail || savedPreference) {
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setResetMessage('');
     setSubmitting(true);
     try {
-      const profile = await signIn(email.trim(), password);
+      const trimmedEmail = email.trim();
+      persistRememberPreference(trimmedEmail, rememberMe);
+      const profile = await signIn(trimmedEmail, password, { remember: rememberMe });
       navigate(resolvePostLoginRoute(profile?.role), { replace: true });
     } catch (_) {
       // error surfaced in context
@@ -29,14 +53,30 @@ const LoginScreen = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    setResetMessage('');
     setGoogleSubmitting(true);
     try {
-      const profile = await signInWithGoogle();
+      persistRememberPreference(email.trim(), rememberMe);
+      const profile = await signInWithGoogle({ remember: rememberMe });
       navigate(resolvePostLoginRoute(profile?.role), { replace: true });
     } catch (_) {
       // error surfaced in context
     } finally {
       setGoogleSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setResetMessage('');
+    setShowResetSentModal(false);
+    setResetSubmitting(true);
+    try {
+      await requestPasswordReset(email.trim());
+      setShowResetSentModal(true);
+    } catch (resetError) {
+      setResetMessage(resetError instanceof Error ? resetError.message : 'Unable to send reset email.');
+    } finally {
+      setResetSubmitting(false);
     }
   };
 
@@ -66,6 +106,7 @@ const LoginScreen = () => {
               id="email"
               type="email"
               label="Email"
+              autoComplete="email"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -74,10 +115,38 @@ const LoginScreen = () => {
               id="password"
               type="password"
               label="Password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
+            <div className="auth-form-meta">
+              <label className="auth-remember-row" htmlFor="remember-me">
+                <span className="auth-checkbox">
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
+                  />
+                  <span aria-hidden="true" className="auth-checkbox-box">
+                    {rememberMe ? <AppIcon name="check" size={12} /> : null}
+                  </span>
+                </span>
+                <span className="auth-remember-copy">
+                  <strong>Remember me</strong>
+                  <span>Keep this device signed in and prefill your email next time.</span>
+                </span>
+              </label>
+              <button
+                type="button"
+                className="auth-forgot-link"
+                onClick={handleForgotPassword}
+                disabled={resetSubmitting || sessionStatus === 'loading'}
+              >
+                {resetSubmitting ? 'Sending reset...' : 'Forgot password?'}
+              </button>
+            </div>
             <div className="auth-actions">
               <Button type="submit" variant="primary" disabled={submitting || sessionStatus === 'loading'}>
                 {sessionStatus === 'loading' || submitting ? 'Signing in...' : 'Login'}
@@ -91,6 +160,7 @@ const LoginScreen = () => {
                 {googleSubmitting ? 'Opening Google...' : 'Continue with Google'}
               </Button>
             </div>
+            {resetMessage ? <p className="auth-reset-message">{resetMessage}</p> : null}
             {error ? <p className="error-text">{error}</p> : null}
           </form>
 
@@ -129,6 +199,25 @@ const LoginScreen = () => {
           </div>
         </aside>
       </section>
+      <Modal
+        open={showResetSentModal}
+        title="Reset Link Sent"
+        onClose={() => setShowResetSentModal(false)}
+        footer={(
+          <Button variant="primary" onClick={() => setShowResetSentModal(false)}>
+            Close
+          </Button>
+        )}
+      >
+        <div className="auth-reset-modal">
+          <p>
+            Password reset email sent to <strong>{email.trim() || 'your email address'}</strong>.
+          </p>
+          <p>
+            Check your inbox and spam folder, then open the reset link to choose a new password.
+          </p>
+        </div>
+      </Modal>
     </main>
   );
 };
@@ -143,4 +232,16 @@ function resolvePostLoginRoute(role) {
     return '/signals';
   }
   return '/';
+}
+
+function persistRememberPreference(email, remember) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.setItem(REMEMBER_PREFERENCE_KEY, remember ? 'true' : 'false');
+  if (remember && email) {
+    window.localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+    return;
+  }
+  window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
 }

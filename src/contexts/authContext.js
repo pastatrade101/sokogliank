@@ -7,12 +7,16 @@ import {
   useState,
 } from 'react';
 import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   sendEmailVerification,
   GoogleAuthProvider,
   signInWithPopup,
+  setPersistence,
 } from 'firebase/auth';
 import {
   collection,
@@ -208,9 +212,10 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const signIn = useCallback(async (email, password) => {
+  const signIn = useCallback(async (email, password, options = {}) => {
     setState((prev) => ({ ...prev, sessionStatus: 'loading', error: null }));
     try {
+      await setPersistence(auth, options?.remember ? browserLocalPersistence : browserSessionPersistence);
       const credential = await signInWithEmailAndPassword(auth, email, password);
       const profile = await fetchUserProfile(credential.user.uid);
       setState({
@@ -264,9 +269,10 @@ export const AuthProvider = ({ children }) => {
     setState({ sessionStatus: 'idle', user: null, profile: null, error: null });
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (options = {}) => {
     setState((prev) => ({ ...prev, sessionStatus: 'loading', error: null }));
     try {
+      await setPersistence(auth, options?.remember ? browserLocalPersistence : browserSessionPersistence);
       const credential = await signInWithPopup(auth, googleProvider);
       const profile = await fetchUserProfile(credential.user.uid);
       setState({
@@ -294,6 +300,14 @@ export const AuthProvider = ({ children }) => {
     await sendEmailVerification(currentUser);
   }, []);
 
+  const requestPasswordReset = useCallback(async (email) => {
+    const trimmedEmail = String(email || '').trim();
+    if (!trimmedEmail) {
+      throw new Error('Enter your email address first.');
+    }
+    await sendPasswordResetEmail(auth, trimmedEmail);
+  }, []);
+
   const value = useMemo(
     () => ({
       ...state,
@@ -302,8 +316,9 @@ export const AuthProvider = ({ children }) => {
       signOut,
       resendVerification,
       refreshProfile,
+      requestPasswordReset,
     }),
-    [state, signIn, signInWithGoogle, signOut, resendVerification, refreshProfile],
+    [state, signIn, signInWithGoogle, signOut, resendVerification, refreshProfile, requestPasswordReset],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

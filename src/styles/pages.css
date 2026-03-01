@@ -2892,6 +2892,26 @@
 
 .auth-form-grid .ui-field {
   gap: 8px;
+  padding: 14px 16px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 98%, transparent), color-mix(in srgb, var(--color-surface-muted) 82%, transparent));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 92%, #fff),
+    0 1px 0 color-mix(in srgb, var(--color-shadow-tint) 8%, transparent);
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+.auth-form-grid .ui-field:focus-within {
+  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-primary));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 92%, #fff),
+    0 0 0 4px color-mix(in srgb, var(--color-focus) 72%, transparent);
+  transform: translateY(-1px);
 }
 
 .auth-form-grid .ui-field-label {
@@ -2899,27 +2919,157 @@
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text-muted) 88%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 54%, var(--color-text-muted));
 }
 
 .auth-form-grid .ui-input {
-  min-height: 54px;
-  padding: 0 0 0 2px;
+  min-height: 30px;
+  padding: 0;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 96%, transparent);
   border-radius: 0;
   background: transparent;
   font-size: 16px;
   box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .auth-form-grid .ui-input:focus {
   outline: 0;
-  border-bottom-color: color-mix(in srgb, var(--color-primary) 58%, var(--color-border));
 }
 
 .auth-form-grid .ui-input::placeholder {
   color: color-mix(in srgb, var(--color-text-muted) 70%, transparent);
+}
+
+.auth-form-grid .ui-input:-webkit-autofill,
+.auth-form-grid .ui-input:-webkit-autofill:hover,
+.auth-form-grid .ui-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text);
+  caret-color: var(--color-text);
+  border-radius: inherit;
+  transition: background-color 9999s ease-out 0s;
+  -webkit-box-shadow: 0 0 0 1000px color-mix(in srgb, var(--color-surface) 98%, transparent) inset;
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--color-surface) 98%, transparent) inset;
+}
+
+.auth-form-grid input[type='password']::-ms-reveal,
+.auth-form-grid input[type='password']::-ms-clear {
+  display: none;
+}
+
+.auth-form-grid input[type='password']::-webkit-credentials-auto-fill-button,
+.auth-form-grid input[type='password']::-webkit-strong-password-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+}
+
+.auth-remember-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 4px 0 2px;
+  cursor: pointer;
+}
+
+.auth-form-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.auth-checkbox {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.auth-checkbox input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.auth-checkbox-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+.auth-checkbox input:checked + .auth-checkbox-box {
+  border-color: color-mix(in srgb, var(--color-primary) 88%, #061327);
+  background: var(--color-primary);
+}
+
+.auth-checkbox input:focus-visible + .auth-checkbox-box {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 80%, transparent);
+  outline-offset: 2px;
+}
+
+.auth-remember-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.auth-remember-copy strong {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.auth-remember-copy span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.auth-forgot-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-primary) 82%, var(--color-text));
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.auth-forgot-link:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-reset-message {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-error);
+}
+
+.auth-reset-modal {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.auth-reset-modal p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.auth-reset-modal strong {
+  color: var(--color-text);
 }
 
 .auth-showcase {
@@ -3139,6 +3289,14 @@
   }
 
   .auth-actions {
+    display: grid;
+  }
+
+  .auth-remember-row {
+    align-items: center;
+  }
+
+  .auth-form-meta {
     display: grid;
   }
 
