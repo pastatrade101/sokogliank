@@ -8,6 +8,7 @@ import { isMember, isTrader } from '../utils/roleHelpers';
 import { isPremiumActive } from '../utils/membershipHelpers';
 import { useEngagementStore } from '../hooks/useEngagementStore';
 import { fetchAnalysisHighlights } from '../services/newsAnalysisService';
+import { buildSessions, formatCountdown, formatSessionTime, nextOverlap } from '../services/sessionsService';
 import {
   AppShell,
   Breadcrumbs,
@@ -15,12 +16,10 @@ import {
   Card,
   EmptyState,
   SkeletonLoader,
-  StatCard,
 } from './ui';
 import { memberNavigation } from '../config/navigation';
 import {
   formatDate,
-  getSignalSessionBucket,
   isCurrentDay,
   isSignalLive,
   normalizeSignal,
@@ -39,6 +38,7 @@ const HomeShell = () => {
   const [analysisCards, setAnalysisCards] = useState([]);
   const [loadingAnalysis, setLoadingAnalysis] = useState(true);
   const [searchValue, setSearchValue] = useState('');
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     const signalsQuery = query(collection(firestore, 'signals'), orderBy('createdAt', 'desc'), limitQuery(20));
@@ -103,6 +103,14 @@ const HomeShell = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   const greetingName = profile?.displayName || profile?.email || 'Trader';
   const premiumActive = isPremiumActive(profile);
 
@@ -117,53 +125,11 @@ const HomeShell = () => {
     });
   }, [liveSignals, searchValue]);
 
-  const sessionSummary = useMemo(() => {
-    const map = { asia: 0, london: 0, newyork: 0 };
-    filteredSignals.forEach((signal) => {
-      const key = getSignalSessionBucket(signal);
-      if (Object.prototype.hasOwnProperty.call(map, key)) {
-        map[key] = (map[key] || 0) + 1;
-      }
-    });
-    return map;
-  }, [filteredSignals]);
-
-  const totalSessionSignals = useMemo(
-    () => Object.values(sessionSummary).reduce((sum, count) => sum + count, 0),
-    [sessionSummary],
+  const activeSessions = useMemo(
+    () => buildSessions(now).filter((session) => session.status === 'open'),
+    [now],
   );
-
-  const sessionDistribution = useMemo(() => {
-    const safeTotal = totalSessionSignals || 1;
-    return [
-      { key: 'asia', label: 'Asia', count: sessionSummary.asia },
-      { key: 'london', label: 'London', count: sessionSummary.london },
-      { key: 'newyork', label: 'New York', count: sessionSummary.newyork },
-    ].map((item) => ({
-      ...item,
-      percent: Math.round((item.count / safeTotal) * 100),
-    }));
-  }, [sessionSummary, totalSessionSignals]);
-
-  const sessionPercentMap = useMemo(() => {
-    const next = { asia: 0, london: 0, newyork: 0 };
-    sessionDistribution.forEach((entry) => {
-      next[entry.key] = entry.percent;
-    });
-    return next;
-  }, [sessionDistribution]);
-
-  const topPairs = useMemo(() => {
-    const map = new Map();
-    filteredSignals.forEach((signal) => {
-      const pair = signal.pair || 'Unknown';
-      map.set(pair, (map.get(pair) || 0) + 1);
-    });
-    return [...map.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([pair, count]) => ({ pair, count }));
-  }, [filteredSignals]);
+  const sessionOverlap = useMemo(() => nextOverlap(now), [now]);
 
   const tipsToday = useMemo(() => latestTips.filter((tip) => isCurrentDay(tip.createdAtDate)).length, [latestTips]);
   const todayLabel = useMemo(
@@ -298,60 +264,55 @@ const HomeShell = () => {
 
         <aside className="dashboard-glance-card">
           <div className="dashboard-glance-head">
-            <p className="dashboard-glance-title">Market Glance</p>
-            <span className="status-badge live">Live</span>
+            <p className="dashboard-glance-title">Active Sessions</p>
+            <span className="status-badge live">Market Clock</span>
           </div>
 
-          <div className="session-flow-list">
-            {sessionDistribution.map((session) => (
-              <article key={session.key} className="session-flow-row">
-                <div className="session-flow-row-head">
-                  <span>{session.label}</span>
-                  <strong>{session.count}</strong>
-                </div>
-                <progress className="session-flow-progress" max="100" value={session.percent} />
-              </article>
-            ))}
-          </div>
+          <div className="dashboard-session-list">
+            {activeSessions.length > 0 ? (
+              activeSessions.map((session) => (
+                <article key={session.key} className={`dashboard-session-item is-${session.status}`.trim()}>
+                  <div className="dashboard-session-item-head">
+                    <div>
+                      <p className="dashboard-session-name">{session.name}</p>
+                      <p className="dashboard-session-hours">
+                        {formatSessionTime(session.opensAt)} - {formatSessionTime(session.closesAt)}
+                      </p>
+                    </div>
+                    <span className={`session-status-pill is-${session.status}`.trim()}>
+                      OPEN
+                    </span>
+                  </div>
 
-          <div className="market-focus-list">
-            <p className="market-focus-title">Most active pairs</p>
-            {topPairs.length === 0 ? (
-              <p className="ui-card-subtitle">No active pairs yet.</p>
-            ) : (
-              topPairs.map((entry) => (
-                <div key={entry.pair} className="market-focus-item">
-                  <span>{entry.pair}</span>
-                  <span>{entry.count} setups</span>
-                </div>
+                  <p className="dashboard-session-countdown">
+                    {`Closes in ${formatCountdown(session.closesIn)}`}
+                  </p>
+                </article>
               ))
+            ) : (
+              <p className="ui-card-subtitle">No active sessions right now.</p>
             )}
           </div>
-        </aside>
-      </section>
 
-      <section className="ui-grid cols-4">
-        <StatCard
-          label="Asia Session"
-          value={sessionSummary.asia}
-          trend={`${sessionPercentMap.asia}% of board`}
-          trendDirection="positive"
-          icon="signal"
-        />
-        <StatCard
-          label="London Session"
-          value={sessionSummary.london}
-          trend={`${sessionPercentMap.london}% of board`}
-          trendDirection="positive"
-          icon="signal"
-        />
-        <StatCard
-          label="New York Session"
-          value={sessionSummary.newyork}
-          trend={`${sessionPercentMap.newyork}% of board`}
-          trendDirection="positive"
-          icon="signal"
-        />
+          <div className="dashboard-session-overlap">
+            <p className="market-focus-title">Session overlap</p>
+            {sessionOverlap ? (
+              <div className="dashboard-session-overlap-card">
+                <strong>{sessionOverlap.subtitle}</strong>
+                <span>{sessionOverlap.countdownLabel}</span>
+              </div>
+            ) : (
+              <p className="ui-card-subtitle">Weekend schedule. Session overlap resumes with the next market open.</p>
+            )}
+          </div>
+
+          <div className="dashboard-session-footer">
+            <span>Tanzania time reference</span>
+            <Button variant="secondary" size="sm" to="/sessions">
+              Open Sessions
+            </Button>
+          </div>
+        </aside>
       </section>
 
       <Card

@@ -24,7 +24,6 @@ import {
   ErrorState,
   Modal,
   SkeletonLoader,
-  StatCard,
   Table,
   Tabs,
   TrendChart,
@@ -220,6 +219,30 @@ const AdminRevenuePage = () => {
       avgAmount: entry.count > 0 ? entry.amount / entry.count : 0,
     }));
   }, [payments]);
+
+  const monthShareOfTotal = computedStats.totalRevenue > 0
+    ? Math.round((computedStats.currentMonthRevenue / computedStats.totalRevenue) * 100)
+    : 0;
+  const todayShareOfMonth = computedStats.currentMonthRevenue > 0
+    ? Math.round((computedStats.todayRevenue / computedStats.currentMonthRevenue) * 100)
+    : 0;
+  const totalAttempts = computedStats.totalPayments + failedOrders.length;
+  const collectionHealth = useMemo(() => ([
+    {
+      key: 'successful',
+      label: 'Successful',
+      value: computedStats.totalPayments,
+      tone: '#0f8a5f',
+      meta: `${formatPercent(totalAttempts > 0 ? computedStats.totalPayments / totalAttempts : 0)} conversion`,
+    },
+    {
+      key: 'failed',
+      label: 'Failed',
+      value: failedOrders.length,
+      tone: '#d95c5c',
+      meta: `${formatPercent(totalAttempts > 0 ? failedOrders.length / totalAttempts : 0)} fallout`,
+    },
+  ]), [computedStats.totalPayments, failedOrders.length, totalAttempts]);
 
   const selectedFailedOrder = useMemo(
     () => failedOrders.find((entry) => entry.id === selectedFailedOrderId) ?? null,
@@ -469,43 +492,31 @@ const AdminRevenuePage = () => {
 
       {activeTab === 'overview' ? (
         <section className="ui-stack">
-          <section className="ui-grid cols-3 admin-kpi-grid">
+          <section className="admin-summary-visual-grid revenue-summary-visual-grid">
             {initialLoading ? (
               <>
-                <SkeletonLoader size="xl" />
-                <SkeletonLoader size="xl" />
                 <SkeletonLoader size="xl" />
                 <SkeletonLoader size="xl" />
               </>
             ) : (
               <>
-                <StatCard
-                  label="Total Revenue"
-                  value={formatMoney(computedStats.totalRevenue / amountDivisor, visibleCurrency)}
-                  trend={`${computedStats.totalPayments} payments total`}
-                  trendDirection="positive"
-                  icon="payments"
+                <RevenuePulseCard
+                  totalRevenue={formatMoney(computedStats.totalRevenue / amountDivisor, visibleCurrency)}
+                  totalPayments={computedStats.totalPayments}
+                  monthRevenue={formatMoney(computedStats.currentMonthRevenue / amountDivisor, visibleCurrency)}
+                  monthPayments={computedStats.currentMonthPayments}
+                  todayRevenue={formatMoney(computedStats.todayRevenue / amountDivisor, visibleCurrency)}
+                  todayPayments={computedStats.todayPayments}
+                  monthShareOfTotal={monthShareOfTotal}
+                  todayShareOfMonth={todayShareOfMonth}
+                  trendDeltaLabel={trendDeltaLabel}
+                  visibleCurrency={visibleCurrency}
                 />
-                <StatCard
-                  label="This Month"
-                  value={formatMoney(computedStats.currentMonthRevenue / amountDivisor, visibleCurrency)}
-                  trend={`${computedStats.currentMonthPayments} payments this month`}
-                  trendDirection="positive"
-                  icon="chart"
-                />
-                <StatCard
-                  label="Today"
-                  value={formatMoney(computedStats.todayRevenue / amountDivisor, visibleCurrency)}
-                  trend={`${computedStats.todayPayments} payments today`}
-                  trendDirection="positive"
-                  icon="clock"
-                />
-                <StatCard
-                  label="Failed Orders"
-                  value={formatCompact(failedOrders.length)}
-                  trend={failedOrders.length > 0 ? 'Needs monitoring' : 'No failed orders'}
-                  trendDirection={failedOrders.length > 0 ? 'negative' : 'positive'}
-                  icon="alert"
+                <CollectionHealthCard
+                  segments={collectionHealth}
+                  totalAttempts={totalAttempts}
+                  failedOrders={failedOrders.length}
+                  planBreakdown={subscriptionBreakdown}
                 />
               </>
             )}
@@ -780,6 +791,228 @@ const AdminRevenuePage = () => {
 
 export default AdminRevenuePage;
 
+function RevenuePulseCard({
+  totalRevenue,
+  totalPayments,
+  monthRevenue,
+  monthPayments,
+  todayRevenue,
+  todayPayments,
+  monthShareOfTotal,
+  todayShareOfMonth,
+  trendDeltaLabel,
+  visibleCurrency,
+}) {
+  return (
+    <Card
+      className="admin-analytics-card revenue-visual-card"
+      title="Revenue Pulse"
+      subtitle={`${trendDeltaLabel} • Totals shown in ${visibleCurrency}`}
+      hover
+      headRight={<span className="admin-metric-chip tone-success">{formatCompact(totalPayments)} settled payments</span>}
+    >
+      <div className="revenue-pulse-grid">
+        <section className="revenue-pulse-total">
+          <span className="revenue-pulse-eyebrow">Collected revenue</span>
+          <strong>{totalRevenue}</strong>
+          <p>All successful payments captured across the workspace.</p>
+        </section>
+
+        <div className="revenue-pulse-tiles">
+          <article className="revenue-pulse-tile">
+            <p>This month</p>
+            <strong>{monthRevenue}</strong>
+            <span>{formatCompact(monthPayments)} payments</span>
+          </article>
+          <article className="revenue-pulse-tile">
+            <p>Today</p>
+            <strong>{todayRevenue}</strong>
+            <span>{formatCompact(todayPayments)} payments</span>
+          </article>
+        </div>
+
+        <div className="revenue-pulse-rail-list">
+          <ProgressMetric
+            label="Month contribution"
+            value={`${monthShareOfTotal}% of total revenue`}
+            percent={monthShareOfTotal}
+            tone="accent"
+          />
+          <ProgressMetric
+            label="Today contribution"
+            value={`${todayShareOfMonth}% of monthly revenue`}
+            percent={todayShareOfMonth}
+            tone="primary"
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function CollectionHealthCard({ segments, totalAttempts, failedOrders, planBreakdown }) {
+  const topPlans = planBreakdown.slice(0, 3);
+
+  return (
+    <Card
+      className="admin-analytics-card revenue-visual-card"
+      title="Collection Health"
+      subtitle="Successful and failed payment intent mix"
+      hover
+      headRight={(
+        <span className={`admin-metric-chip ${failedOrders > 0 ? 'tone-error' : 'tone-success'}`.trim()}>
+          {formatCompact(failedOrders)} failed orders
+        </span>
+      )}
+    >
+      <div className="revenue-health-grid">
+        <InteractiveDonut
+          segments={segments}
+          total={totalAttempts}
+          centerLabel="Attempts"
+          centerValue={formatCompact(totalAttempts)}
+        />
+
+        <div className="revenue-health-side">
+          <div className="revenue-health-legend">
+            {segments.map((segment) => (
+              <article key={segment.key} className="revenue-health-item">
+                <div className="revenue-health-item-head">
+                  <span className="admin-role-distribution-dot" style={{ background: segment.tone }} aria-hidden="true" />
+                  <p>{segment.label}</p>
+                  <strong>{formatCompact(segment.value)}</strong>
+                </div>
+                <span className="admin-role-distribution-meta">{segment.meta}</span>
+              </article>
+            ))}
+          </div>
+
+          <div className="revenue-plan-mini-list">
+            <p className="revenue-plan-mini-title">Top plan mix</p>
+            {topPlans.length > 0 ? (
+              topPlans.map((row) => (
+                <ProgressMetric
+                  key={row.key}
+                  label={row.label}
+                  value={`${row.percent}% of sales`}
+                  percent={row.percent}
+                  tone="success"
+                />
+              ))
+            ) : (
+              <p className="ui-card-subtitle">No subscription mix yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ProgressMetric({ label, value, percent, tone = 'primary' }) {
+  const safePercent = Math.max(0, Math.min(100, Number(percent || 0)));
+  return (
+    <article className="revenue-progress-metric">
+      <div className="revenue-progress-metric-head">
+        <p>{label}</p>
+        <span>{value}</span>
+      </div>
+      <div className="revenue-progress-track" aria-hidden="true">
+        <span className={`revenue-progress-fill tone-${tone}`.trim()} style={{ width: `${safePercent}%` }} />
+      </div>
+    </article>
+  );
+}
+
+function InteractiveDonut({ segments, total, centerLabel, centerValue }) {
+  const [activeKey, setActiveKey] = useState('');
+  const outerRadius = 50;
+  const innerRadius = 30;
+  const visibleSegments = segments.filter((segment) => segment.value > 0);
+  const activeSegment = visibleSegments.find((segment) => segment.key === activeKey) || null;
+  let currentAngle = -90;
+
+  return (
+    <div className="admin-role-donut-shell">
+      <div className="admin-role-donut">
+        <svg className="admin-role-donut-svg" viewBox="0 0 120 120" role="img" aria-label={centerLabel}>
+          {visibleSegments.map((segment) => {
+            const sweep = total > 0 ? (segment.value / total) * 360 : 0;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + sweep;
+            currentAngle = endAngle;
+            const isActive = activeSegment?.key === segment.key;
+            const path = describeDonutArcPath({
+              cx: 60,
+              cy: 60,
+              innerRadius,
+              outerRadius,
+              startAngle,
+              endAngle,
+              gapDegrees: 2.8,
+            });
+            return (
+              <path
+                key={segment.key}
+                className={`admin-role-donut-segment ${isActive ? 'is-active' : ''}`.trim()}
+                d={path}
+                fill={segment.tone}
+                onMouseEnter={() => setActiveKey(segment.key)}
+                onMouseLeave={() => setActiveKey('')}
+                onFocus={() => setActiveKey(segment.key)}
+                onBlur={() => setActiveKey('')}
+                tabIndex={0}
+                style={{ transformOrigin: '60px 60px' }}
+              >
+                <title>{`${segment.label}: ${formatCompact(segment.value)} (${total > 0 ? Math.round((segment.value / total) * 100) : 0}%)`}</title>
+              </path>
+            );
+          })}
+        </svg>
+        <div className={`admin-role-donut-center ${activeSegment ? 'is-active' : ''}`.trim()}>
+          <span>{activeSegment ? activeSegment.label : centerLabel}</span>
+          <strong>{activeSegment ? formatCompact(activeSegment.value) : centerValue}</strong>
+          <small>
+            {activeSegment
+              ? `${total > 0 ? Math.round((activeSegment.value / total) * 100) : 0}% share`
+              : 'Hover chart for detail'}
+          </small>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function describeDonutArcPath({ cx, cy, innerRadius, outerRadius, startAngle, endAngle, gapDegrees = 0 }) {
+  const sweep = endAngle - startAngle;
+  if (sweep <= 0) {
+    return '';
+  }
+  const safeGap = sweep > gapDegrees ? gapDegrees / 2 : 0;
+  const safeStart = startAngle + safeGap;
+  const safeEnd = endAngle - safeGap;
+  const outerStart = polarToCartesian(cx, cy, outerRadius, safeStart);
+  const outerEnd = polarToCartesian(cx, cy, outerRadius, safeEnd);
+  const innerEnd = polarToCartesian(cx, cy, innerRadius, safeEnd);
+  const innerStart = polarToCartesian(cx, cy, innerRadius, safeStart);
+  const largeArcFlag = safeEnd - safeStart > 180 ? 1 : 0;
+  return [
+    'M', outerStart.x, outerStart.y,
+    'A', outerRadius, outerRadius, 0, largeArcFlag, 1, outerEnd.x, outerEnd.y,
+    'L', innerEnd.x, innerEnd.y,
+    'A', innerRadius, innerRadius, 0, largeArcFlag, 0, innerStart.x, innerStart.y,
+    'Z',
+  ].join(' ');
+}
+
+function polarToCartesian(cx, cy, radius, angleInDegrees) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
+}
+
 function normalizeRevenueStats(data = {}) {
   return {
     currency: String(data.currency || 'TZS').toUpperCase(),
@@ -884,6 +1117,10 @@ function formatCompact(value) {
   return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(
     Number(value ?? 0),
   );
+}
+
+function formatPercent(value) {
+  return `${Math.round(Number(value || 0) * 100)}%`;
 }
 
 function planLabel(productId) {

@@ -13,7 +13,7 @@ import { useTheme } from '../contexts/themeContext';
 import { useAuth } from '../contexts/authContext';
 import { firestore } from '../firebase/init';
 import { isAdminOrTraderAdmin } from '../utils/roleHelpers';
-import { getSignalSessionBucket, normalizeSignal, timestampToDate } from '../utils/tradingData';
+import { formatDateTime, getSignalSessionBucket, normalizeSignal, timestampToDate } from '../utils/tradingData';
 import { getAdminNavItems } from '../config/adminNavigation';
 import {
   AppShell,
@@ -22,7 +22,6 @@ import {
   Card,
   ErrorState,
   SkeletonLoader,
-  StatCard,
   Tabs,
   TrendChart,
 } from './ui';
@@ -187,10 +186,6 @@ const AdminShell = () => {
     () => deltaFromPrevious(analytics.premiumConversion.series[0]?.data ?? []),
     [analytics.premiumConversion.series],
   );
-  const signalsDelta = useMemo(
-    () => deltaFromPrevious(analytics.signalVolumeTrend),
-    [analytics.signalVolumeTrend],
-  );
   const coverageShare = summary.totalUsers > 0
     ? Math.round(((summary.traders + summary.traderAdmins) / summary.totalUsers) * 100)
     : 0;
@@ -230,59 +225,23 @@ const AdminShell = () => {
         />
       ) : null}
 
-      <section className="ui-grid cols-3 admin-kpi-grid">
+      <section className="admin-summary-visual-grid">
         {loading ? (
           <>
-            <SkeletonLoader size="xl" />
-            <SkeletonLoader size="xl" />
-            <SkeletonLoader size="xl" />
-            <SkeletonLoader size="xl" />
             <SkeletonLoader size="xl" />
             <SkeletonLoader size="xl" />
           </>
         ) : (
           <>
-            <StatCard
-              label="Total Users"
-              value={formatCompact(summary.totalUsers)}
-              trend={formatDeltaLabel(usersDelta)}
-              trendDirection={usersDelta >= 0 ? 'positive' : 'negative'}
-              icon="user"
+            <RoleDistributionCard
+              summary={summary}
+              usersDelta={usersDelta}
+              coverageShare={coverageShare}
             />
-            <StatCard
-              label="Traders"
-              value={formatCompact(summary.traders)}
-              trend={`${coverageShare}% market contributors`}
-              trendDirection="positive"
-              icon="chart"
-            />
-            <StatCard
-              label="Trader Admins"
-              value={formatCompact(summary.traderAdmins)}
-              trend={`${Math.round((summary.traderAdmins / Math.max(1, summary.totalUsers)) * 100)}% of users`}
-              trendDirection="positive"
-              icon="sparkles"
-            />
-            <StatCard
-              label="Signals Shared"
-              value={formatCompact(summary.totalSignals)}
-              trend={formatDeltaLabel(signalsDelta)}
-              trendDirection={signalsDelta >= 0 ? 'positive' : 'negative'}
-              icon="signal"
-            />
-            <StatCard
-              label="Subscriptions"
-              value={formatCompact(summary.activeSubscriptions)}
-              trend={`${subscriptionShare}% of user base`}
-              trendDirection="positive"
-              icon="upgrade"
-            />
-            <StatCard
-              label="Trial Accounts"
-              value={formatCompact(summary.trialAccounts)}
-              trend={`${trialShare}% of user base`}
-              trendDirection="positive"
-              icon="clock"
+            <MembershipMixCard
+              summary={summary}
+              subscriptionShare={subscriptionShare}
+              trialShare={trialShare}
             />
           </>
         )}
@@ -455,6 +414,31 @@ const AdminShell = () => {
                 <LegendItem tone="accent" label="Pending" />
                 <LegendItem tone="error" label="Failed" />
               </div>
+              <div className="admin-subpanel admin-subpanel-tight">
+                <div className="admin-subpanel-head">
+                  <div>
+                    <h3>Recent transactions</h3>
+                    <p>Latest 3 successful payments from the current analytics window.</p>
+                  </div>
+                </div>
+                <div className="admin-transaction-list">
+                  {(analytics.providerSuccessRate.recentTransactions || []).map((transaction) => (
+                    <article key={transaction.id} className="admin-transaction-row">
+                      <div className="admin-transaction-main">
+                        <div className="admin-transaction-provider">
+                          <span className="admin-transaction-provider-dot" aria-hidden="true" />
+                          <strong>{transaction.providerLabel}</strong>
+                        </div>
+                        <p>{planLabel(transaction.productId)}</p>
+                      </div>
+                      <div className="admin-transaction-side">
+                        <strong>{formatCompact(transaction.amount)} TZS</strong>
+                        <span>{formatDateTime(transaction.createdAtDate)}</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </Card>
@@ -530,6 +514,11 @@ const AdminShell = () => {
               />
               <SnapshotLine
                 icon="signal"
+                label="Signals shared total"
+                value={formatCompact(summary.totalSignals)}
+              />
+              <SnapshotLine
+                icon="signal"
                 label="Signals resolved in model"
                 value={formatCompact(analytics.signalQuality.resolvedCount)}
               />
@@ -574,6 +563,7 @@ function emptyAnalytics() {
       bestProvider: 'None',
       bestRate: 0,
       data: [],
+      recentTransactions: [],
     },
     expiryForecast: {
       activePremium: 0,
@@ -611,7 +601,7 @@ function buildAdminAnalytics({
         .filter((date) => date instanceof Date),
       WEEKS_WINDOW,
     ),
-    providerSuccessRate: buildProviderSuccessRate(paymentIntents),
+    providerSuccessRate: buildProviderSuccessRate(paymentIntents, payments),
     expiryForecast: buildMembershipExpiryForecast(activeMembershipDocs),
     signalQuality,
   };
@@ -693,7 +683,7 @@ function buildRevenueAnalytics(payments, failedOrders) {
   };
 }
 
-function buildProviderSuccessRate(paymentIntents) {
+function buildProviderSuccessRate(paymentIntents, payments = []) {
   const providers = ['airtel', 'vodacom', 'tigo', 'halopesa'];
   const totals = providers.reduce((acc, provider) => {
     acc[provider] = { paid: 0, pending: 0, failed: 0 };
@@ -730,6 +720,17 @@ function buildProviderSuccessRate(paymentIntents) {
     bestProvider,
     bestRate,
     data,
+    recentTransactions: payments
+      .filter((payment) => payment.createdAtDate instanceof Date)
+      .sort((left, right) => right.createdAtDate.getTime() - left.createdAtDate.getTime())
+      .slice(0, 3)
+      .map((payment, index) => ({
+        id: `${payment.provider}-${payment.productId}-${payment.createdAtDate?.getTime?.() ?? index}`,
+        providerLabel: payment.provider ? payment.provider.toUpperCase() : 'UNKNOWN',
+        productId: payment.productId,
+        amount: payment.amount,
+        createdAtDate: payment.createdAtDate,
+      })),
   };
 }
 
@@ -1059,9 +1060,9 @@ function weekWindowLabel(start) {
   return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function MetricChip({ icon, label, tone = 'primary' }) {
+function MetricChip({ icon, label, tone = 'primary', className = '' }) {
   return (
-    <span className={`admin-metric-chip tone-${tone}`.trim()}>
+    <span className={`admin-metric-chip tone-${tone} ${className}`.trim()}>
       <AppIcon name={icon} size={14} />
       {label}
     </span>
@@ -1084,6 +1085,236 @@ function InsightItem({ label, value }) {
       <strong>{value}</strong>
     </article>
   );
+}
+
+function RoleDistributionCard({ summary, usersDelta, coverageShare }) {
+  const totalUsers = Math.max(0, Number(summary.totalUsers || 0));
+  const segments = [
+    {
+      key: 'members',
+      label: 'Members',
+      value: Number(summary.members || 0),
+      tone: '#1c386c',
+    },
+    {
+      key: 'traders',
+      label: 'Traders',
+      value: Number(summary.traders || 0),
+      tone: '#0f8a5f',
+    },
+    {
+      key: 'traderAdmins',
+      label: 'Trader Admins',
+      value: Number(summary.traderAdmins || 0),
+      tone: '#f2c45a',
+    },
+    {
+      key: 'admins',
+      label: 'Admins',
+      value: Number(summary.admins || 0),
+      tone: '#d95c5c',
+    },
+  ];
+
+  return (
+    <Card
+      className="admin-role-distribution-card"
+      title="User Role Distribution"
+      subtitle={`${formatDeltaLabel(usersDelta)} • ${coverageShare}% market contributors`}
+      hover
+    >
+      <div className="admin-role-users-chip-row">
+        <MetricChip className="admin-role-users-chip" icon="user" label={`${formatCompact(totalUsers)} users`} />
+      </div>
+      <div className="admin-role-distribution-body">
+        <InteractiveDonut
+          segments={segments}
+          total={totalUsers}
+          centerLabel="Total Users"
+          centerValue={formatCompact(totalUsers)}
+        />
+
+        <div className="admin-role-distribution-legend">
+          {segments.map((segment) => {
+            const share = totalUsers > 0 ? Math.round((segment.value / totalUsers) * 100) : 0;
+            return (
+              <article key={segment.key} className="admin-role-distribution-item">
+                <div className="admin-role-distribution-item-head">
+                  <span
+                    className="admin-role-distribution-dot"
+                    style={{ background: segment.tone }}
+                    aria-hidden="true"
+                  />
+                  <p>{segment.label}</p>
+                  <strong>{formatCompact(segment.value)}</strong>
+                </div>
+                <span className="admin-role-distribution-meta">{share}% of total users</span>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function MembershipMixCard({ summary, subscriptionShare, trialShare }) {
+  const totalUsers = Math.max(0, Number(summary.totalUsers || 0));
+  const freeUsers = Math.max(0, totalUsers - Number(summary.activeSubscriptions || 0) - Number(summary.trialAccounts || 0));
+  const segments = [
+    {
+      key: 'premium',
+      label: 'Subscriptions',
+      value: Number(summary.activeSubscriptions || 0),
+      tone: '#f2c45a',
+      icon: 'upgrade',
+      meta: `${subscriptionShare}% of user base`,
+    },
+    {
+      key: 'trial',
+      label: 'Trial Accounts',
+      value: Number(summary.trialAccounts || 0),
+      tone: '#1c386c',
+      icon: 'clock',
+      meta: `${trialShare}% of user base`,
+    },
+    {
+      key: 'free',
+      label: 'Free Users',
+      value: freeUsers,
+      tone: '#98a2b3',
+      icon: 'user',
+      meta: `${totalUsers > 0 ? Math.round((freeUsers / totalUsers) * 100) : 0}% of user base`,
+    },
+  ];
+
+  return (
+    <Card
+      className="admin-membership-mix-card"
+      title="Membership State"
+      subtitle="Premium, trial, and free user distribution"
+      hover
+      headRight={<MetricChip className="admin-membership-premium-chip" icon="upgrade" label={`${formatCompact(summary.activeSubscriptions)} active premium`} tone="warning" />}
+    >
+      <div className="admin-role-distribution-body">
+        <InteractiveDonut
+          segments={segments}
+          total={totalUsers}
+          centerLabel="Membership"
+          centerValue={formatCompact(totalUsers)}
+        />
+
+        <div className="admin-role-distribution-legend">
+          {segments.map((segment) => (
+            <article key={segment.key} className="admin-membership-distribution-item">
+              <div className="admin-membership-distribution-head">
+                <span
+                  className="admin-membership-distribution-icon"
+                  style={{ background: `color-mix(in srgb, ${segment.tone} 14%, transparent)`, color: segment.tone }}
+                >
+                  <AppIcon name={segment.icon} size={15} />
+                </span>
+                <div>
+                  <p>{segment.label}</p>
+                  <strong>{formatCompact(segment.value)}</strong>
+                </div>
+              </div>
+              <span className="admin-role-distribution-meta">{segment.meta}</span>
+            </article>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function InteractiveDonut({ segments, total, centerLabel, centerValue }) {
+  const [activeKey, setActiveKey] = useState('');
+  const outerRadius = 50;
+  const innerRadius = 30;
+  const visibleSegments = segments.filter((segment) => segment.value > 0);
+  const activeSegment = visibleSegments.find((segment) => segment.key === activeKey) || null;
+  let currentAngle = -90;
+
+  return (
+    <div className="admin-role-donut-shell">
+      <div className="admin-role-donut">
+        <svg className="admin-role-donut-svg" viewBox="0 0 120 120" role="img" aria-label={centerLabel}>
+          {visibleSegments.map((segment) => {
+            const sweep = total > 0 ? (segment.value / total) * 360 : 0;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + sweep;
+            currentAngle = endAngle;
+            const isActive = activeSegment?.key === segment.key;
+            const path = describeDonutArcPath({
+              cx: 60,
+              cy: 60,
+              innerRadius,
+              outerRadius,
+              startAngle,
+              endAngle,
+              gapDegrees: 2.8,
+            });
+            return (
+              <path
+                key={segment.key}
+                className={`admin-role-donut-segment ${isActive ? 'is-active' : ''}`.trim()}
+                d={path}
+                fill={segment.tone}
+                onMouseEnter={() => setActiveKey(segment.key)}
+                onMouseLeave={() => setActiveKey('')}
+                onFocus={() => setActiveKey(segment.key)}
+                onBlur={() => setActiveKey('')}
+                tabIndex={0}
+                style={{ transformOrigin: '60px 60px' }}
+              >
+                <title>{`${segment.label}: ${formatCompact(segment.value)} (${total > 0 ? Math.round((segment.value / total) * 100) : 0}%)`}</title>
+              </path>
+            );
+          })}
+        </svg>
+        <div className={`admin-role-donut-center ${activeSegment ? 'is-active' : ''}`.trim()}>
+          <span>{activeSegment ? activeSegment.label : centerLabel}</span>
+          <strong>{activeSegment ? formatCompact(activeSegment.value) : centerValue}</strong>
+          <small>
+            {activeSegment
+              ? `${total > 0 ? Math.round((activeSegment.value / total) * 100) : 0}% share`
+              : 'Hover chart for detail'}
+          </small>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function describeDonutArcPath({ cx, cy, innerRadius, outerRadius, startAngle, endAngle, gapDegrees = 0 }) {
+  const sweep = endAngle - startAngle;
+  if (sweep <= 0) {
+    return '';
+  }
+  const safeGap = sweep > gapDegrees ? gapDegrees / 2 : 0;
+  const safeStart = startAngle + safeGap;
+  const safeEnd = endAngle - safeGap;
+  const outerStart = polarToCartesian(cx, cy, outerRadius, safeStart);
+  const outerEnd = polarToCartesian(cx, cy, outerRadius, safeEnd);
+  const innerEnd = polarToCartesian(cx, cy, innerRadius, safeEnd);
+  const innerStart = polarToCartesian(cx, cy, innerRadius, safeStart);
+  const largeArcFlag = safeEnd - safeStart > 180 ? 1 : 0;
+  return [
+    'M', outerStart.x, outerStart.y,
+    'A', outerRadius, outerRadius, 0, largeArcFlag, 1, outerEnd.x, outerEnd.y,
+    'L', innerEnd.x, innerEnd.y,
+    'A', innerRadius, innerRadius, 0, largeArcFlag, 0, innerStart.x, innerStart.y,
+    'Z',
+  ].join(' ');
+}
+
+function polarToCartesian(cx, cy, radius, angleInDegrees) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
 }
 
 function SnapshotLine({ icon, label, value }) {
