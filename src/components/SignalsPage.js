@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { addDoc, collection, limit as limitQuery, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -56,6 +56,74 @@ const SIGNAL_RISK_OPTIONS = [
   { value: 'Low', label: 'Low' },
   { value: 'Medium', label: 'Medium' },
   { value: 'High', label: 'High' },
+];
+
+const SIGNAL_PAIR_OPTIONS = [
+  { value: '', label: 'Select pair' },
+  { value: 'EURUSD', label: 'EUR/USD' },
+  { value: 'GBPUSD', label: 'GBP/USD' },
+  { value: 'USDJPY', label: 'USD/JPY' },
+  { value: 'USDCHF', label: 'USD/CHF' },
+  { value: 'AUDUSD', label: 'AUD/USD' },
+  { value: 'USDCAD', label: 'USD/CAD' },
+  { value: 'NZDUSD', label: 'NZD/USD' },
+  { value: 'EURGBP', label: 'EUR/GBP' },
+  { value: 'EURJPY', label: 'EUR/JPY' },
+  { value: 'EURCHF', label: 'EUR/CHF' },
+  { value: 'EURAUD', label: 'EUR/AUD' },
+  { value: 'EURCAD', label: 'EUR/CAD' },
+  { value: 'EURNZD', label: 'EUR/NZD' },
+  { value: 'GBPJPY', label: 'GBP/JPY' },
+  { value: 'GBPCHF', label: 'GBP/CHF' },
+  { value: 'GBPAUD', label: 'GBP/AUD' },
+  { value: 'GBPCAD', label: 'GBP/CAD' },
+  { value: 'GBPNZD', label: 'GBP/NZD' },
+  { value: 'AUDJPY', label: 'AUD/JPY' },
+  { value: 'AUDNZD', label: 'AUD/NZD' },
+  { value: 'AUDCAD', label: 'AUD/CAD' },
+  { value: 'AUDCHF', label: 'AUD/CHF' },
+  { value: 'CADJPY', label: 'CAD/JPY' },
+  { value: 'CADCHF', label: 'CAD/CHF' },
+  { value: 'NZDJPY', label: 'NZD/JPY' },
+  { value: 'NZDCHF', label: 'NZD/CHF' },
+  { value: 'CHFJPY', label: 'CHF/JPY' },
+  { value: 'USDZAR', label: 'USD/ZAR' },
+  { value: 'USDTRY', label: 'USD/TRY' },
+  { value: 'USDMXN', label: 'USD/MXN' },
+  { value: 'USDSEK', label: 'USD/SEK' },
+  { value: 'USDNOK', label: 'USD/NOK' },
+  { value: 'USDDKK', label: 'USD/DKK' },
+  { value: 'USDPLN', label: 'USD/PLN' },
+  { value: 'USDHUF', label: 'USD/HUF' },
+  { value: 'USDCZK', label: 'USD/CZK' },
+  { value: 'USDSGD', label: 'USD/SGD' },
+  { value: 'USDHKD', label: 'USD/HKD' },
+  { value: 'USDILS', label: 'USD/ILS' },
+  { value: 'USDTHB', label: 'USD/THB' },
+  { value: 'USDCNH', label: 'USD/CNH' },
+  { value: 'EURTRY', label: 'EUR/TRY' },
+  { value: 'EURZAR', label: 'EUR/ZAR' },
+  { value: 'EURMXN', label: 'EUR/MXN' },
+  { value: 'GBPTRY', label: 'GBP/TRY' },
+  { value: 'US30', label: 'US30 — Dow Jones (CFD)' },
+  { value: 'SPX500', label: 'SPX500 — S&P 500 (CFD)' },
+  { value: 'NAS100', label: 'NAS100 — Nasdaq 100 (CFD)' },
+  { value: 'US2000', label: 'US2000 — Russell 2000 (CFD)' },
+  { value: 'UK100', label: 'UK100 — FTSE 100 (CFD)' },
+  { value: 'GER30', label: 'GER30 — Germany 30 / DAX (CFD)' },
+  { value: 'FRA40', label: 'FRA40 — France 40 / CAC (CFD)' },
+  { value: 'EUSTX50', label: 'EUSTX50 — Euro Stoxx 50 (CFD)' },
+  { value: 'ESP35', label: 'ESP35 — Spain 35 / IBEX (CFD)' },
+  { value: 'JPN225', label: 'JPN225 — Japan 225 / Nikkei (CFD)' },
+  { value: 'HKG33', label: 'HKG33 — Hong Kong / Hang Seng (CFD)' },
+  { value: 'CHN50', label: 'CHN50 — China A50 (CFD)' },
+  { value: 'AUS200', label: 'AUS200 — Australia 200 (CFD)' },
+  { value: 'XAUUSD', label: 'XAU/USD (Gold)' },
+  { value: 'OIL', label: 'OIL — Crude Oil (CFD)' },
+  { value: 'BTCUSD', label: 'BTC/USD' },
+  { value: 'ETHUSDT', label: 'ETH/USDT' },
+  { value: 'SOLUSDT', label: 'SOL/USDT' },
+  { value: 'XRPUSDT', label: 'XRP/USDT' },
 ];
 
 const SignalsPage = () => {
@@ -593,12 +661,12 @@ const SignalsPage = () => {
       >
         <form className="signal-compose-form" onSubmit={handleCreateSignal}>
           <div className="signal-compose-grid">
-            <Input
+            <SearchablePairField
               id="signal-compose-pair"
               label="Pair"
-              placeholder="EURUSD"
               value={pairValue}
-              onChange={(event) => setPairValue(event.target.value.replace(/\s+/g, '').toUpperCase())}
+              onChange={setPairValue}
+              options={SIGNAL_PAIR_OPTIONS}
               required
             />
             <Select
@@ -907,6 +975,105 @@ function resolveDisplayStatus(signal, nowMs) {
     label: raw,
     className: raw.toLowerCase(),
   };
+}
+
+function SearchablePairField({ id, label, value, onChange, options, required = false }) {
+  const containerRef = useRef(null);
+  const searchableOptions = useMemo(
+    () => options.filter((option) => option.value),
+    [options],
+  );
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    const activeOption = searchableOptions.find((option) => option.value === value);
+    setQuery(activeOption ? `${activeOption.value} - ${activeOption.label}` : '');
+  }, [searchableOptions, value]);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!containerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredOptions = searchableOptions.filter((option) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+    const haystack = `${option.value} ${option.label}`.toLowerCase();
+    return haystack.includes(normalizedQuery);
+  }).slice(0, 12);
+
+  const handleInputChange = (event) => {
+    const nextQuery = event.target.value;
+    setQuery(nextQuery);
+    setOpen(true);
+    const exactMatch = searchableOptions.find((option) => {
+      const optionText = `${option.value} - ${option.label}`.toLowerCase();
+      const normalizedInput = nextQuery.trim().toLowerCase();
+      return option.value.toLowerCase() === normalizedInput
+        || option.label.toLowerCase() === normalizedInput
+        || optionText === normalizedInput;
+    });
+    onChange(exactMatch ? exactMatch.value : '');
+  };
+
+  const handleSelect = (option) => {
+    onChange(option.value);
+    setQuery(`${option.value} - ${option.label}`);
+    setOpen(false);
+  };
+
+  return (
+    <label className="ui-field signal-pair-combobox" htmlFor={id} ref={containerRef}>
+      {label ? <span className="ui-field-label">{label}</span> : null}
+      <input
+        id={id}
+        className="ui-input"
+        type="text"
+        role="combobox"
+        autoComplete="off"
+        placeholder="Search pair"
+        value={query}
+        onChange={handleInputChange}
+        onFocus={() => setOpen(true)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-autocomplete="list"
+        aria-controls={`${id}-listbox`}
+      />
+      <input type="hidden" value={value} required={required} />
+      {open ? (
+        <div className="signal-pair-combobox-menu" id={`${id}-listbox`} role="listbox">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`signal-pair-combobox-option ${value === option.value ? 'is-active' : ''}`.trim()}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => handleSelect(option)}
+                role="option"
+                aria-selected={value === option.value}
+              >
+                <strong>{option.value}</strong>
+                <span>{option.label}</span>
+              </button>
+            ))
+          ) : (
+            <p className="signal-pair-combobox-empty">No matching pairs</p>
+          )}
+        </div>
+      ) : null}
+    </label>
+  );
 }
 
 function defaultValidityRange() {

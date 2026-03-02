@@ -3047,6 +3047,70 @@
   gap: var(--space-2);
 }
 
+.signal-pair-combobox {
+  position: relative;
+}
+
+.signal-pair-combobox-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  max-height: 280px;
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 98%, transparent), color-mix(in srgb, var(--color-surface-muted) 90%, transparent));
+  box-shadow: 0 18px 36px rgba(10, 19, 38, 0.14);
+}
+
+.signal-pair-combobox-option {
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  background: transparent;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
+}
+
+.signal-pair-combobox-option:last-child {
+  border-bottom: 0;
+}
+
+.signal-pair-combobox-option strong,
+.signal-pair-combobox-option span,
+.signal-pair-combobox-empty {
+  margin: 0;
+}
+
+.signal-pair-combobox-option strong {
+  font-size: 13px;
+}
+
+.signal-pair-combobox-option span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.signal-pair-combobox-option:hover,
+.signal-pair-combobox-option.is-active {
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+}
+
+.signal-pair-combobox-empty {
+  padding: 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
 .signal-compose-toggle-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
