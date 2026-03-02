@@ -1,25 +1,66 @@
 {
   "short_name": "Soko Gliank",
   "name": "Soko Gliank Trader Workspace",
+  "description": "Signals, sessions, premium analysis, and admin tools in one trader workspace.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "icons": [
-    {
-      "src": "logo.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    },
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     }
   ],
-  "start_url": ".",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "theme_color": "#1c386c",
-  "background_color": "#0a0f1a"
+  "background_color": "#0a0f1a",
+  "categories": ["finance", "business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Signals",
+      "short_name": "Signals",
+      "url": "/signals",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "short_name": "Sessions",
+      "url": "/sessions",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Upgrade",
+      "short_name": "Upgrade",
+      "url": "/upgrade",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

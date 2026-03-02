@@ -3,8 +3,11 @@ import { useEffect } from 'react';
 import { motionVariants } from '../../design/motion';
 import Button from './Button';
 import AppIcon from '../icons/AppIcon';
+import useBodyScrollLock from './useBodyScrollLock';
 
 const Modal = ({ open, title, children, footer, onClose }) => {
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) {
       return undefined;

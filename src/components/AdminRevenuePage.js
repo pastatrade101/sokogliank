@@ -49,6 +49,9 @@ const AdminRevenuePage = () => {
   const { theme, toggleTheme } = useTheme();
   const { pushToast } = useToast();
   const adminUser = isAdminOrTraderAdmin(profile?.role);
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches,
+  );
   const revenueNavItems = useMemo(() => getAdminNavItems(profile?.role), [profile?.role]);
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -69,6 +72,17 @@ const AdminRevenuePage = () => {
   const [selectedFailedOrderId, setSelectedFailedOrderId] = useState('');
   const [selectedFailedOrderUser, setSelectedFailedOrderUser] = useState(null);
   const [loadingSelectedFailedOrderUser, setLoadingSelectedFailedOrderUser] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const mediaQuery = window.matchMedia('(max-width: 760px)');
+    const onChange = (event) => setIsMobileViewport(event.matches);
+    setIsMobileViewport(mediaQuery.matches);
+    mediaQuery.addEventListener('change', onChange);
+    return () => mediaQuery.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     if (!adminUser) {
@@ -469,6 +483,7 @@ const AdminRevenuePage = () => {
         activeKey={activeTab}
         onChange={setActiveTab}
         ariaLabel="Revenue tabs"
+        className="revenue-page-tabs"
       />
 
       <div className="revenue-content-toolbar">
@@ -533,6 +548,7 @@ const AdminRevenuePage = () => {
                 activeKey={trendRange}
                 onChange={setTrendRange}
                 ariaLabel="Trend range"
+                className="revenue-range-tabs"
               />
             )}
           >
@@ -562,6 +578,12 @@ const AdminRevenuePage = () => {
               <SkeletonLoader size="xl" />
             ) : payments.length === 0 ? (
               <EmptyState title="No successful payments yet" description="Transactions will appear here." icon="payments" />
+            ) : isMobileViewport ? (
+              <RevenueTransactionsMobileList
+                rows={payments.slice(0, 8)}
+                amountDivisor={amountDivisor}
+                visibleCurrency={visibleCurrency}
+              />
             ) : (
               <Table
                 columns={transactionsColumns}
@@ -587,6 +609,12 @@ const AdminRevenuePage = () => {
             <SkeletonLoader size="xl" />
           ) : payments.length === 0 ? (
             <EmptyState title="No transactions yet" description="Successful payments will appear here." icon="payments" />
+          ) : isMobileViewport ? (
+            <RevenueTransactionsMobileList
+              rows={payments}
+              amountDivisor={amountDivisor}
+              visibleCurrency={visibleCurrency}
+            />
           ) : (
             <Table
               columns={transactionsColumns}
@@ -673,6 +701,13 @@ const AdminRevenuePage = () => {
             <SkeletonLoader size="xl" />
           ) : failedOrders.length === 0 ? (
             <EmptyState title="No failed orders" description="Failed payment intents will appear here." icon="check" />
+          ) : isMobileViewport ? (
+            <RevenueFailedOrdersMobileList
+              rows={failedOrders}
+              amountDivisor={amountDivisor}
+              visibleCurrency={visibleCurrency}
+              onView={(row) => setSelectedFailedOrderId(row.id)}
+            />
           ) : (
             <Table
               columns={failedOrdersColumns}
@@ -975,10 +1010,81 @@ function InteractiveDonut({ segments, total, centerLabel, centerValue }) {
           <small>
             {activeSegment
               ? `${total > 0 ? Math.round((activeSegment.value / total) * 100) : 0}% share`
-              : 'Hover chart for detail'}
+              : 'Tap or hover chart for detail'}
           </small>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RevenueTransactionsMobileList({ rows, amountDivisor, visibleCurrency }) {
+  return (
+    <div className="revenue-mobile-list">
+      {rows.map((row) => (
+        <article key={row.id} className="revenue-mobile-card">
+          <div className="revenue-mobile-card-head">
+            <div className="revenue-mobile-card-copy">
+              <p className="revenue-table-title">{formatMoney(row.amount / amountDivisor, visibleCurrency)}</p>
+              <p className="revenue-table-subtitle">{planLabel(row.productId)}</p>
+            </div>
+            <span className="status-badge live">{(row.provider || '--').toUpperCase()}</span>
+          </div>
+
+          <div className="revenue-mobile-meta">
+            <p>
+              <span>User</span>
+              <strong className="revenue-code">{row.uid || '--'}</strong>
+            </p>
+            <p>
+              <span>Phone</span>
+              <strong>{row.msisdn || '--'}</strong>
+            </p>
+            <p>
+              <span>Time</span>
+              <strong>{row.createdAtDate ? formatDateTime(row.createdAtDate) : '--'}</strong>
+            </p>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function RevenueFailedOrdersMobileList({ rows, amountDivisor, visibleCurrency, onView }) {
+  return (
+    <div className="revenue-mobile-list">
+      {rows.map((row) => (
+        <article key={row.id} className="revenue-mobile-card">
+          <div className="revenue-mobile-card-head">
+            <div className="revenue-mobile-card-copy">
+              <p className="revenue-table-title">{formatMoney(row.amount / amountDivisor, visibleCurrency)}</p>
+              <p className="revenue-table-subtitle">{planLabel(row.productId)}</p>
+            </div>
+            <div className="revenue-mobile-card-actions">
+              <span className={`status-badge ${statusTone(row.status)}`.trim()}>{humanizeStatus(row.status)}</span>
+              <Button size="sm" variant="secondary" onClick={() => onView(row)}>
+                View
+              </Button>
+            </div>
+          </div>
+
+          <div className="revenue-mobile-meta">
+            <p>
+              <span>Reason</span>
+              <strong>{row.reason || '--'}</strong>
+            </p>
+            <p>
+              <span>Provider</span>
+              <strong>{row.provider || '--'}</strong>
+            </p>
+            <p>
+              <span>Updated</span>
+              <strong>{row.updatedAtDate || row.createdAtDate ? formatDateTime(row.updatedAtDate || row.createdAtDate) : '--'}</strong>
+            </p>
+          </div>
+        </article>
+      ))}
     </div>
   );
 }

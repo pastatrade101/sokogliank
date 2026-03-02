@@ -2235,10 +2235,43 @@
   margin: var(--space-2) 0 0;
 }
 
+.revenue-page-tabs,
+.revenue-range-tabs {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+}
+
+.revenue-page-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.revenue-range-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.revenue-page-tabs .ui-tab,
+.revenue-range-tabs .ui-tab {
+  width: 100%;
+  padding-inline: var(--space-2);
+}
+
 .revenue-content-toolbar {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.revenue-content-toolbar .quick-actions {
+  width: 100%;
+}
+
+.revenue-content-toolbar .quick-actions .ui-button:first-child {
+  width: 100%;
+}
+
+.revenue-content-toolbar .quick-actions .ui-button:not(:first-child) {
+  flex: 1 1 0;
 }
 
 .revenue-summary-visual-grid {
@@ -2306,7 +2339,6 @@
 
 .revenue-pulse-tiles {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -2359,10 +2391,8 @@
 }
 
 .revenue-progress-metric-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  display: grid;
+  gap: 6px;
 }
 
 .revenue-progress-metric-head p,
@@ -2400,8 +2430,6 @@
 
 .revenue-health-grid {
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
-  align-items: center;
   gap: var(--space-4);
 }
 
@@ -2472,6 +2500,64 @@
   grid-column: 1 / -1;
 }
 
+.revenue-mobile-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.revenue-mobile-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 48%),
+    color-mix(in srgb, var(--color-surface) 94%, transparent);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.revenue-mobile-card-head,
+.revenue-mobile-card-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.revenue-mobile-card-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.revenue-mobile-meta {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.revenue-mobile-meta p {
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-muted) 80%, transparent);
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.revenue-mobile-meta span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.revenue-mobile-meta strong {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .revenue-reference-list {
   display: grid;
   gap: 6px;
@@ -2481,18 +2567,61 @@
   margin: 0;
 }
 
-@media (max-width: 920px) {
+@media (min-width: 560px) {
   .revenue-pulse-tiles,
+  .revenue-mobile-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 761px) {
+  .revenue-page-tabs,
+  .revenue-range-tabs {
+    width: fit-content;
+    display: inline-flex;
+  }
+
+  .revenue-page-tabs .ui-tab,
+  .revenue-range-tabs .ui-tab {
+    width: auto;
+    padding-inline: var(--space-3);
+  }
+
+  .revenue-content-toolbar {
+    justify-items: end;
+  }
+
+  .revenue-content-toolbar .quick-actions {
+    width: auto;
+  }
+
+  .revenue-content-toolbar .quick-actions .ui-button:first-child,
+  .revenue-content-toolbar .quick-actions .ui-button:not(:first-child) {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .revenue-progress-metric-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+  }
+}
+
+@media (min-width: 921px) {
   .revenue-health-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+    align-items: center;
   }
 }
 
 @media (max-width: 680px) {
   .revenue-progress-metric-head {
     align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
+  }
+
+  .revenue-mobile-meta {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

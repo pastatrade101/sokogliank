@@ -29,6 +29,7 @@ import {
   StatCard,
   Table,
   Tabs,
+  Toggle,
   useToast,
 } from './ui';
 import AppIcon from './icons/AppIcon';
@@ -81,6 +82,7 @@ const AdminUserManagementPage = () => {
   const [editRole, setEditRole] = useState('member');
   const [editTraderStatus, setEditTraderStatus] = useState('none');
   const [editBanned, setEditBanned] = useState(false);
+  const [editTrialClaim, setEditTrialClaim] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -136,6 +138,7 @@ const AdminUserManagementPage = () => {
     setEditRole(selectedUser.role);
     setEditTraderStatus(selectedUser.traderStatus);
     setEditBanned(selectedUser.isBanned);
+    setEditTrialClaim(selectedUser.trialUsed);
   }, [selectedUser]);
 
   const roleCounts = useMemo(() => {
@@ -301,12 +304,19 @@ const AdminUserManagementPage = () => {
     }
     setSaving(true);
     try {
+      const membershipPayload = { ...(selectedUser.membershipRaw ?? {}) };
+      if (selectedUser.membership.source && membershipPayload.source == null) {
+        membershipPayload.source = selectedUser.membership.source;
+      }
+      membershipPayload.trialUsed = editTrialClaim;
+
       await setDoc(doc(firestore, 'users', selectedUser.uid), {
         displayName: safeName,
         country: editCountry.trim(),
         role: editRole,
         traderStatus: editTraderStatus,
         isBanned: editBanned,
+        membership: membershipPayload,
         updatedAt: serverTimestamp(),
       }, { merge: true });
       pushToast({ type: 'success', title: 'User updated', message: 'Changes saved successfully.' });
@@ -563,6 +573,14 @@ const AdminUserManagementPage = () => {
                 onChange={(event) => setEditTraderStatus(event.target.value)}
                 options={TRADER_STATUS_OPTIONS}
               />
+              <Toggle
+                id="edit-user-trial-claim"
+                checked={editTrialClaim}
+                onChange={setEditTrialClaim}
+                label="Trial claim"
+                activeText="True"
+                inactiveText="False"
+              />
             </div>
 
             <div className="quick-actions">
@@ -586,6 +604,9 @@ const AdminUserManagementPage = () => {
 export default AdminUserManagementPage;
 
 function normalizeAdminUser(uid, data = {}) {
+  const membershipRaw = data.membership && typeof data.membership === 'object'
+    ? data.membership
+    : null;
   const membership = normalizeMembership(data.membership, data.membershipTier);
   const expiresAt = membership.expiresAt;
   const premiumActive = membership.tier === 'premium'
@@ -604,8 +625,10 @@ function normalizeAdminUser(uid, data = {}) {
     isBanned: data.isBanned === true,
     avatarUrl: String(data.avatarUrl || data.photoURL || data.photoUrl || '').trim(),
     createdAtDate: timestampToDate(data.createdAt),
+    membershipRaw,
     membership,
     premiumActive,
+    trialUsed: membership.trialUsed === true,
     trialAccount,
   };
 }

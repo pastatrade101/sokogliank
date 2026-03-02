@@ -5,6 +5,7 @@ import { collection, limit as limitQuery, onSnapshot, orderBy, query } from 'fir
 import { firestore } from '../firebase/init';
 import { isPremiumActive } from '../utils/membershipHelpers';
 import useSignalPremiumDetails from '../hooks/useSignalPremiumDetails';
+import { Modal } from './ui';
 
 const SignalsSection = ({
   headerTitle = 'Member Signals',
@@ -19,6 +20,7 @@ const SignalsSection = ({
   const [loadingSignals, setLoadingSignals] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [activeSessionTab, setActiveSessionTab] = useState('asia');
+  const [previewSignal, setPreviewSignal] = useState(null);
   const hasPremiumAccess = useMemo(() => {
     const role = String(viewerProfile?.role || '').toLowerCase();
     return isPremiumActive(viewerProfile) || role === 'admin' || role === 'trader' || role === 'trader_admin';
@@ -148,10 +150,29 @@ const SignalsSection = ({
               key={signal.id}
               signal={signal}
               hasPremiumAccess={hasPremiumAccess}
+              onPreviewSignal={setPreviewSignal}
             />
           ))
         )}
       </div>
+
+      <Modal
+        open={Boolean(previewSignal)}
+        title={previewSignal ? `${previewSignal.pair} chart image` : 'Signal image'}
+        onClose={() => setPreviewSignal(null)}
+      >
+        {previewSignal?.imageUrl ? (
+          <div className="signal-image-preview-wrap">
+            <img
+              src={previewSignal.imageUrl}
+              alt={`${previewSignal.pair} signal chart`}
+              className="signal-image-preview"
+            />
+          </div>
+        ) : (
+          <p className="signals-helper">No image available for this signal.</p>
+        )}
+      </Modal>
     </section>
   );
 };
@@ -164,7 +185,7 @@ const TrendDetail = ({ tone, label, value }) => (
   </div>
 );
 
-const SignalsSectionCard = ({ signal, hasPremiumAccess }) => {
+const SignalsSectionCard = ({ signal, hasPremiumAccess, onPreviewSignal }) => {
   const shouldLoadPremiumDetails = signal.premiumOnly && hasPremiumAccess;
   const { details, loading } = useSignalPremiumDetails(signal.id, shouldLoadPremiumDetails);
   const isLocked = signal.premiumOnly && !hasPremiumAccess;
@@ -259,6 +280,15 @@ const SignalsSectionCard = ({ signal, hasPremiumAccess }) => {
         <span className="signal-tag-chip">{primaryTag}</span>
         <p className="signal-meta-name">{signal.posterName}</p>
         <div className="signal-meta-counts">
+          {!isLocked && signal.imageUrl ? (
+            <button
+              type="button"
+              className="signal-image-button"
+              onClick={() => onPreviewSignal(signal)}
+            >
+              View image
+            </button>
+          ) : null}
           <span aria-label="likes">👍 {signal.likesCount}</span>
           <span aria-label="dislikes">👎 {signal.dislikesCount}</span>
         </div>
@@ -312,6 +342,7 @@ function normalizeSignal(id, data = {}) {
     likesCount: data.likesCount ?? 0,
     dislikesCount: data.dislikesCount ?? 0,
     tags: Array.isArray(data.tags) ? data.tags : [],
+    imageUrl: resolveSignalImageUrl(data),
   };
 }
 
@@ -447,6 +478,26 @@ function isSignalLive(signal) {
 
 function hasSignalTip(signal) {
   return typeof signal?.tip === 'string' && signal.tip.trim().length > 0;
+}
+
+function resolveSignalImageUrl(data = {}) {
+  const candidates = [
+    data.imageUrl,
+    data.chartImageUrl,
+    data.signalImageUrl,
+    data.screenshotUrl,
+    data.preview?.imageUrl,
+    data.preview?.chartImageUrl,
+  ];
+
+  for (const candidate of candidates) {
+    const url = String(candidate ?? '').trim();
+    if (url) {
+      return url;
+    }
+  }
+
+  return '';
 }
 
 function toBoolean(value) {

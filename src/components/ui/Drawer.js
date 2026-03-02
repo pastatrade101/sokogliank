@@ -1,7 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { motionVariants } from '../../design/motion';
+import useBodyScrollLock from './useBodyScrollLock';
 
 const Drawer = ({ open, title, children, onClose }) => {
+  useBodyScrollLock(open);
+
   return (
     <AnimatePresence>
       {open ? (
