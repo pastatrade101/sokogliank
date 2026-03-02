@@ -95,6 +95,7 @@ export function normalizeSignal(id, data = {}) {
     dislikesCount: Number(data.dislikesCount ?? 0),
     tags: Array.isArray(data.tags) ? data.tags : [],
     imageUrl,
+    premiumOnly: toBoolean(data.premiumOnly ?? data.preview?.premiumOnly ?? data.isPremium ?? data.isPremiumOnly),
   };
 }
 
@@ -271,4 +272,15 @@ function resolveAuthorAvatar(data = {}) {
   }
 
   return '';
+}
+
+function toBoolean(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
 }

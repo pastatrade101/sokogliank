@@ -8,6 +8,7 @@ import { useTheme } from '../contexts/themeContext';
 import { isAdmin, isMember, isTrader } from '../utils/roleHelpers';
 import { isPremiumActive } from '../utils/membershipHelpers';
 import { useEngagementStore } from '../hooks/useEngagementStore';
+import useSignalPremiumDetails from '../hooks/useSignalPremiumDetails';
 import {
   AppShell,
   Breadcrumbs,
@@ -204,6 +205,7 @@ const SignalsPage = () => {
   const adminUser = isAdmin(profile?.role);
   const traderUser = isTrader(profile?.role);
   const traderActive = traderUser && String(profile?.traderStatus || '').toLowerCase() === 'active';
+  const canViewPremiumSignals = premiumActive || adminUser || traderUser;
   const navItems = adminUser ? adminNavigation : (traderUser ? traderAdminNavigation : memberNavigation);
 
   const visibleSignals = useMemo(() => {
@@ -234,6 +236,11 @@ const SignalsPage = () => {
     });
     return initial;
   }, [signals, liveOnly, nowMs]);
+
+  const hasLockedSignals = useMemo(
+    () => visibleSignals.some((signal) => signal.premiumOnly && !canViewPremiumSignals),
+    [canViewPremiumSignals, visibleSignals],
+  );
 
   if (sessionStatus === 'initializing' || sessionStatus === 'loading') {
     return <div className="screen-screen">Loading signals...</div>;
@@ -482,11 +489,11 @@ const SignalsPage = () => {
         </div>
       </div>
 
-      {!premiumActive ? (
+      {hasLockedSignals ? (
         <Card hover>
           <EmptyState
-            title="Premium unlocks full signal details"
-            description="You can browse current opportunities now. Upgrade to reveal full entry, SL, TP, and reasoning details."
+            title="Premium unlocks premium-only signals"
+            description="Standard signals remain visible. Upgrade to reveal premium-only entry, SL, TP, and reasoning details."
             actionLabel="Upgrade Membership"
             actionTo="/upgrade"
             icon="upgrade"
@@ -533,121 +540,24 @@ const SignalsPage = () => {
         ) : (
           <section className="signals-card-grid">
             {visibleSignals.map((signal) => {
-              const entryValue = premiumActive ? formatSignalEntry(signal) : '••••••';
-              const stopLossValue = premiumActive ? formatSignalPoint(signal.stopLoss) : '••••••';
-              const tp1Value = premiumActive ? formatSignalPoint(signal.tp1) : '••••••';
-              const tp2Value = premiumActive ? formatSignalPoint(signal.tp2) : '••••••';
-              const displayStatus = resolveDisplayStatus(signal, nowMs);
-              const rawValidityPercent = calculateValidityPercent(signal, nowMs);
-              const isExpired = displayStatus.className === 'expired';
-              const forceExpiredValidity = isExpired;
-              const validityPercent = forceExpiredValidity ? 0 : rawValidityPercent;
-              const hasValidity = Number.isFinite(rawValidityPercent) || forceExpiredValidity;
-              const cardToneClass = resolveSignalCardTone(signal.direction);
-              const validityToneClass = resolveValidityTone(validityPercent);
-
               return (
-                <article
+                <SignalBoardCard
                   key={signal.id}
-                  className={`signal-board-card ${cardToneClass} ${validityToneClass}`.trim()}
-                >
-                  <header className="signal-board-card-head">
-                    <div>
-                      <span className="signal-board-chip">
-                        <AppIcon name="sparkles" size={12} />
-                        Live setup
-                      </span>
-                      <p className="signal-board-pair">{signal.pair}</p>
-                      <p className="signal-board-session">{String(signal.session || 'Any').replace(/_/g, ' ')}</p>
-                    </div>
-                    <div className="signal-board-head-right">
-                      <span className={`signal-direction-chip ${String(signal.direction || 'n-a').toLowerCase()}`.trim()}>
-                        {premiumActive ? signal.directionLabel : 'PREMIUM'}
-                      </span>
-                      <span className={`status-badge ${displayStatus.className}`}>{displayStatus.label}</span>
-                    </div>
-                  </header>
-
-                  <p className="signal-board-summary">
-                    {premiumActive ? signal.summary : 'Upgrade to unlock this signal summary and full setup rationale.'}
-                  </p>
-
-                  <div className="signal-board-metrics">
-                    <article className="signal-board-metric">
-                      <div className="signal-board-metric-head">
-                        <AppIcon name="chart" size={13} />
-                        <p>Entry</p>
-                      </div>
-                      <strong>{entryValue}</strong>
-                    </article>
-                    <article className="signal-board-metric">
-                      <div className="signal-board-metric-head">
-                        <AppIcon name="alert" size={13} />
-                        <p>SL</p>
-                      </div>
-                      <strong>{stopLossValue}</strong>
-                    </article>
-                    <article className="signal-board-metric">
-                      <div className="signal-board-metric-head">
-                        <AppIcon name="arrowUp" size={13} />
-                        <p>TP1</p>
-                      </div>
-                      <strong>{tp1Value}</strong>
-                    </article>
-                    <article className="signal-board-metric">
-                      <div className="signal-board-metric-head">
-                        <AppIcon name="check" size={13} />
-                        <p>TP2</p>
-                      </div>
-                      <strong>{tp2Value}</strong>
-                    </article>
-                  </div>
-
-                  <footer className="signal-board-footer">
-                    <div className="signal-board-validity">
-                      <div className="signal-board-validity-head">
-                        <span>Validity</span>
-                        <strong>{hasValidity ? `${validityPercent}%` : '--'}</strong>
-                      </div>
-                      {!isExpired ? (
-                        <progress
-                          className="signal-board-validity-progress"
-                          max="100"
-                          value={hasValidity ? validityPercent : 0}
-                          title={signal.validUntilDate ? `Valid until ${formatDateTime(signal.validUntilDate)}` : 'No expiry set'}
-                          aria-label="Signal validity progress"
-                        />
-                      ) : (
-                        <span className="signal-board-validity-expired">Expired</span>
-                      )}
-                    </div>
-                    <div className="signal-board-foot-right">
-                      <span className="ui-card-subtitle">Posted: {formatDateTime(signal.createdAtDate)}</span>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={!premiumActive || !signal.imageUrl}
-                        onClick={() => {
-                          if (!premiumActive || !signal.imageUrl) {
-                            return;
-                          }
-                          saveRecentSignal({
-                            id: signal.id,
-                            pair: signal.pair,
-                            direction: signal.direction,
-                            directionLabel: signal.directionLabel,
-                            session: signal.session,
-                            createdAtDate: signal.createdAtDate,
-                          });
-                          setPreviewSignal(signal);
-                        }}
-                      >
-                        <AppIcon name="external" size={13} />
-                        {premiumActive ? 'View image' : 'Premium image'}
-                      </Button>
-                    </div>
-                  </footer>
-                </article>
+                  signal={signal}
+                  nowMs={nowMs}
+                  canViewPremiumSignals={canViewPremiumSignals}
+                  onPreviewSignal={(nextSignal) => {
+                    saveRecentSignal({
+                      id: nextSignal.id,
+                      pair: nextSignal.pair,
+                      direction: nextSignal.direction,
+                      directionLabel: nextSignal.directionLabel,
+                      session: nextSignal.session,
+                      createdAtDate: nextSignal.createdAtDate,
+                    });
+                    setPreviewSignal(nextSignal);
+                  }}
+                />
               );
             })}
           </section>
@@ -861,6 +771,128 @@ const SignalsPage = () => {
 };
 
 export default SignalsPage;
+
+function SignalBoardCard({ signal, nowMs, canViewPremiumSignals, onPreviewSignal }) {
+  const shouldLoadPremiumDetails = signal.premiumOnly && canViewPremiumSignals;
+  const { details, loading } = useSignalPremiumDetails(signal.id, shouldLoadPremiumDetails);
+  const effectiveSignal = useMemo(() => ({
+    ...signal,
+    entryType: details?.entryType || signal.entryType,
+    entryPrice: details?.entryPrice ?? signal.entryPrice,
+    entryRange: details?.entryRange ?? signal.entryRange,
+    stopLoss: details?.stopLoss ?? signal.stopLoss,
+    tp1: details?.tp1 ?? signal.tp1,
+    tp2: details?.tp2 ?? signal.tp2,
+    summary: details?.reason || signal.summary,
+  }), [details, signal]);
+  const isLocked = signal.premiumOnly && !canViewPremiumSignals;
+  const entryValue = isLocked ? '••••••' : formatSignalEntry(effectiveSignal);
+  const stopLossValue = isLocked ? '••••••' : formatSignalPoint(effectiveSignal.stopLoss);
+  const tp1Value = isLocked ? '••••••' : formatSignalPoint(effectiveSignal.tp1);
+  const tp2Value = isLocked ? '••••••' : formatSignalPoint(effectiveSignal.tp2);
+  const displayStatus = resolveDisplayStatus(signal, nowMs);
+  const rawValidityPercent = calculateValidityPercent(signal, nowMs);
+  const isExpired = displayStatus.className === 'expired';
+  const forceExpiredValidity = isExpired;
+  const validityPercent = forceExpiredValidity ? 0 : rawValidityPercent;
+  const hasValidity = Number.isFinite(rawValidityPercent) || forceExpiredValidity;
+  const cardToneClass = resolveSignalCardTone(signal.direction);
+  const validityToneClass = resolveValidityTone(validityPercent);
+  const summaryText = isLocked
+    ? 'Upgrade to unlock this premium-only signal summary and full setup rationale.'
+    : (loading && signal.premiumOnly ? 'Loading premium details...' : effectiveSignal.summary);
+
+  return (
+    <article className={`signal-board-card ${cardToneClass} ${validityToneClass}`.trim()}>
+      <header className="signal-board-card-head">
+        <div>
+          <span className="signal-board-chip">
+            <AppIcon name="sparkles" size={12} />
+            {signal.premiumOnly ? 'Premium setup' : 'Live setup'}
+          </span>
+          <p className="signal-board-pair">{signal.pair}</p>
+          <p className="signal-board-session">{String(signal.session || 'Any').replace(/_/g, ' ')}</p>
+        </div>
+        <div className="signal-board-head-right">
+          <span className={`signal-direction-chip ${String(signal.direction || 'n-a').toLowerCase()}`.trim()}>
+            {isLocked ? 'PREMIUM' : signal.directionLabel}
+          </span>
+          <span className={`status-badge ${displayStatus.className}`}>{displayStatus.label}</span>
+        </div>
+      </header>
+
+      <p className="signal-board-summary">{summaryText}</p>
+
+      <div className="signal-board-metrics">
+        <article className="signal-board-metric">
+          <div className="signal-board-metric-head">
+            <AppIcon name="chart" size={13} />
+            <p>Entry</p>
+          </div>
+          <strong>{loading && signal.premiumOnly && !isLocked ? '...' : entryValue}</strong>
+        </article>
+        <article className="signal-board-metric">
+          <div className="signal-board-metric-head">
+            <AppIcon name="alert" size={13} />
+            <p>SL</p>
+          </div>
+          <strong>{loading && signal.premiumOnly && !isLocked ? '...' : stopLossValue}</strong>
+        </article>
+        <article className="signal-board-metric">
+          <div className="signal-board-metric-head">
+            <AppIcon name="arrowUp" size={13} />
+            <p>TP1</p>
+          </div>
+          <strong>{loading && signal.premiumOnly && !isLocked ? '...' : tp1Value}</strong>
+        </article>
+        <article className="signal-board-metric">
+          <div className="signal-board-metric-head">
+            <AppIcon name="check" size={13} />
+            <p>TP2</p>
+          </div>
+          <strong>{loading && signal.premiumOnly && !isLocked ? '...' : tp2Value}</strong>
+        </article>
+      </div>
+
+      <footer className="signal-board-footer">
+        <div className="signal-board-validity">
+          <div className="signal-board-validity-head">
+            <span>Validity</span>
+            <strong>{hasValidity ? `${validityPercent}%` : '--'}</strong>
+          </div>
+          {!isExpired ? (
+            <progress
+              className="signal-board-validity-progress"
+              max="100"
+              value={hasValidity ? validityPercent : 0}
+              title={signal.validUntilDate ? `Valid until ${formatDateTime(signal.validUntilDate)}` : 'No expiry set'}
+              aria-label="Signal validity progress"
+            />
+          ) : (
+            <span className="signal-board-validity-expired">Expired</span>
+          )}
+        </div>
+        <div className="signal-board-foot-right">
+          <span className="ui-card-subtitle">Posted: {formatDateTime(signal.createdAtDate)}</span>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={isLocked || !signal.imageUrl}
+            onClick={() => {
+              if (isLocked || !signal.imageUrl) {
+                return;
+              }
+              onPreviewSignal(signal);
+            }}
+          >
+            <AppIcon name="external" size={13} />
+            {isLocked ? 'Premium image' : 'View image'}
+          </Button>
+        </div>
+      </footer>
+    </article>
+  );
+}
 
 function formatSignalEntry(signal) {
   if (signal.entryRange) {

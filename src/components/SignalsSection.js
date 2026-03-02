@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { collection, limit as limitQuery, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { firestore } from '../firebase/init';
 import { isPremiumActive } from '../utils/membershipHelpers';
+import useSignalPremiumDetails from '../hooks/useSignalPremiumDetails';
 
 const SignalsSection = ({
   headerTitle = 'Member Signals',
@@ -18,7 +19,10 @@ const SignalsSection = ({
   const [loadingSignals, setLoadingSignals] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [activeSessionTab, setActiveSessionTab] = useState('asia');
-  const hasPremiumAccess = useMemo(() => isPremiumActive(viewerProfile), [viewerProfile]);
+  const hasPremiumAccess = useMemo(() => {
+    const role = String(viewerProfile?.role || '').toLowerCase();
+    return isPremiumActive(viewerProfile) || role === 'admin' || role === 'trader' || role === 'trader_admin';
+  }, [viewerProfile]);
 
   useEffect(() => {
     const signalsQuery = query(
@@ -119,9 +123,9 @@ const SignalsSection = ({
           ))}
         </div>
       )}
-      {!hasPremiumAccess && (
+      {!hasPremiumAccess && visibleSignals.some((signal) => signal.premiumOnly) && (
         <div className="signals-upgrade-banner" role="note">
-          <p>Premium membership required to view full signal data.</p>
+          <p>Premium membership is required only for premium-only signal data.</p>
           <Link to="/upgrade" className="signal-upgrade-button">
             Upgrade to Premium
           </Link>
@@ -139,97 +143,13 @@ const SignalsSection = ({
               : 'No signals posted yet.'}
           </p>
         ) : (
-          filteredSignals.map((signal) => {
-            const isLocked = !hasPremiumAccess;
-            const entryDetail = !isLocked
-              ? signal.entryRange
-                ? `${signal.entryRange.min.toFixed(5)} - ${signal.entryRange.max.toFixed(5)}`
-                : signal.entryPrice
-                  ? signal.entryPrice.toFixed(5)
-                  : 'Market'
-              : '••••••';
-            const directionClass = !isLocked
-              ? signal.directionLabel
-                ? signal.directionLabel.toLowerCase().replace(/[^a-z]/g, '-')
-                : 'n-a'
-              : 'premium';
-            const directionColor = directionClass.includes('long')
-              ? '#4fe1a5'
-              : directionClass.includes('short')
-                ? '#ff7a93'
-                : directionClass.includes('premium')
-                  ? '#f8cf57'
-                : '#999';
-            const validUntilDate = signal.validUntilDate;
-            const sessionLabel = signal.session ? signal.session.replace(/_/g, ' ') : 'Any session';
-            const progressValue = !isLocked ? calculateProgress(signal.createdAtDate, validUntilDate) : 0;
-            const tagList = Array.isArray(signal.tags) ? signal.tags : [];
-            const primaryTag = isLocked ? 'Premium content' : tagList[0] ?? 'No tag';
-            const tipText = !isLocked && signal.tip ? signal.tip : '';
-
-            return (
-              <article
-                key={signal.id}
-                className="signal-card"
-                style={{ '--direction-accent': directionColor }}
-              >
-                <div className="signal-card-head">
-                  <div>
-                    <p className="signals-label">{signal.pair ?? 'Unknown pair'}</p>
-                    <p className="signal-session">{sessionLabel}</p>
-                  </div>
-                  <div className="signal-pill-row">
-                    <span className={`signal-direction ${directionClass}`}>
-                      {isLocked ? 'PREMIUM' : signal.directionLabel}
-                    </span>
-                    <span className="signal-meta-pill">{isLocked ? 'LOCKED' : signal.statusLabel}</span>
-                  </div>
-                </div>
-
-                <div className="signal-card-body">
-                  <p className="signal-body">
-                    <span className="signal-body-label" aria-hidden="true">
-                      ↗
-                    </span>
-                    {isLocked ? 'Upgrade to unlock entry, stop loss, targets, and setup reasoning.' : signal.summary}
-                  </p>
-                  {tipText ? <p className="signal-tip">Tip: {tipText}</p> : null}
-                  <div className="signal-card-metrics">
-                    <TrendDetail tone="entry" label="Entry" value={entryDetail} />
-                    <TrendDetail tone="sl" label="SL" value={isLocked ? '••••••' : signal.stopLoss?.toFixed(5) ?? '--'} />
-                    <TrendDetail tone="tp" label="TP1" value={isLocked ? '••••••' : signal.tp1?.toFixed(5) ?? '--'} />
-                    <TrendDetail tone="neutral" label="TP2" value={isLocked ? '••••••' : signal.tp2?.toFixed(5) ?? '--'} />
-                  </div>
-                  {isLocked ? (
-                    <div className="signal-upgrade-panel">
-                      <Link to="/upgrade" className="signal-upgrade-button">
-                        Upgrade to Premium
-                      </Link>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="signal-progress-head">
-                        <span>Progress</span>
-                        <strong>{progressValue}%</strong>
-                      </div>
-                      <div className="signal-progress-set">
-                        <div className="signal-progress-bar" style={{ width: `${progressValue}%` }} />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="signal-card-footer">
-                  <span className="signal-tag-chip">{primaryTag}</span>
-                  <p className="signal-meta-name">{signal.posterName}</p>
-                  <div className="signal-meta-counts">
-                    <span aria-label="likes">👍 {signal.likesCount}</span>
-                    <span aria-label="dislikes">👎 {signal.dislikesCount}</span>
-                  </div>
-                </div>
-              </article>
-            );
-          })
+          filteredSignals.map((signal) => (
+            <SignalsSectionCard
+              key={signal.id}
+              signal={signal}
+              hasPremiumAccess={hasPremiumAccess}
+            />
+          ))
         )}
       </div>
     </section>
@@ -243,6 +163,109 @@ const TrendDetail = ({ tone, label, value }) => (
     <strong>{value}</strong>
   </div>
 );
+
+const SignalsSectionCard = ({ signal, hasPremiumAccess }) => {
+  const shouldLoadPremiumDetails = signal.premiumOnly && hasPremiumAccess;
+  const { details, loading } = useSignalPremiumDetails(signal.id, shouldLoadPremiumDetails);
+  const isLocked = signal.premiumOnly && !hasPremiumAccess;
+  const effectiveSignal = useMemo(() => ({
+    ...signal,
+    entryType: details?.entryType || signal.entryType,
+    entryPrice: details?.entryPrice ?? signal.entryPrice,
+    entryRange: details?.entryRange ?? signal.entryRange,
+    stopLoss: details?.stopLoss ?? signal.stopLoss,
+    tp1: details?.tp1 ?? signal.tp1,
+    tp2: details?.tp2 ?? signal.tp2,
+    summary: details?.reason || signal.summary,
+  }), [details, signal]);
+  const entryDetail = !isLocked
+    ? effectiveSignal.entryRange
+      ? `${effectiveSignal.entryRange.min.toFixed(5)} - ${effectiveSignal.entryRange.max.toFixed(5)}`
+      : effectiveSignal.entryPrice
+        ? effectiveSignal.entryPrice.toFixed(5)
+        : 'Market'
+    : '••••••';
+  const directionClass = !isLocked
+    ? effectiveSignal.directionLabel
+      ? effectiveSignal.directionLabel.toLowerCase().replace(/[^a-z]/g, '-')
+      : 'n-a'
+    : 'premium';
+  const directionColor = directionClass.includes('long')
+    ? '#4fe1a5'
+    : directionClass.includes('short')
+      ? '#ff7a93'
+      : directionClass.includes('premium')
+        ? '#f8cf57'
+      : '#999';
+  const validUntilDate = signal.validUntilDate;
+  const sessionLabel = signal.session ? signal.session.replace(/_/g, ' ') : 'Any session';
+  const progressValue = !isLocked ? calculateProgress(signal.createdAtDate, validUntilDate) : 0;
+  const tagList = Array.isArray(signal.tags) ? signal.tags : [];
+  const primaryTag = isLocked ? 'Premium content' : tagList[0] ?? 'No tag';
+  const tipText = !isLocked && signal.tip ? signal.tip : '';
+  const summaryText = isLocked
+    ? 'Upgrade to unlock entry, stop loss, targets, and setup reasoning.'
+    : (loading && signal.premiumOnly ? 'Loading premium details...' : effectiveSignal.summary);
+
+  return (
+    <article className="signal-card" style={{ '--direction-accent': directionColor }}>
+      <div className="signal-card-head">
+        <div>
+          <p className="signals-label">{signal.pair ?? 'Unknown pair'}</p>
+          <p className="signal-session">{sessionLabel}</p>
+        </div>
+        <div className="signal-pill-row">
+          <span className={`signal-direction ${directionClass}`}>
+            {isLocked ? 'PREMIUM' : signal.directionLabel}
+          </span>
+          <span className="signal-meta-pill">{isLocked ? 'LOCKED' : signal.statusLabel}</span>
+        </div>
+      </div>
+
+      <div className="signal-card-body">
+        <p className="signal-body">
+          <span className="signal-body-label" aria-hidden="true">
+            ↗
+          </span>
+          {summaryText}
+        </p>
+        {tipText ? <p className="signal-tip">Tip: {tipText}</p> : null}
+        <div className="signal-card-metrics">
+          <TrendDetail tone="entry" label="Entry" value={loading && signal.premiumOnly && !isLocked ? '...' : entryDetail} />
+          <TrendDetail tone="sl" label="SL" value={loading && signal.premiumOnly && !isLocked ? '...' : (isLocked ? '••••••' : effectiveSignal.stopLoss?.toFixed(5) ?? '--')} />
+          <TrendDetail tone="tp" label="TP1" value={loading && signal.premiumOnly && !isLocked ? '...' : (isLocked ? '••••••' : effectiveSignal.tp1?.toFixed(5) ?? '--')} />
+          <TrendDetail tone="neutral" label="TP2" value={loading && signal.premiumOnly && !isLocked ? '...' : (isLocked ? '••••••' : effectiveSignal.tp2?.toFixed(5) ?? '--')} />
+        </div>
+        {isLocked ? (
+          <div className="signal-upgrade-panel">
+            <Link to="/upgrade" className="signal-upgrade-button">
+              Upgrade to Premium
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="signal-progress-head">
+              <span>Progress</span>
+              <strong>{progressValue}%</strong>
+            </div>
+            <div className="signal-progress-set">
+              <div className="signal-progress-bar" style={{ width: `${progressValue}%` }} />
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="signal-card-footer">
+        <span className="signal-tag-chip">{primaryTag}</span>
+        <p className="signal-meta-name">{signal.posterName}</p>
+        <div className="signal-meta-counts">
+          <span aria-label="likes">👍 {signal.likesCount}</span>
+          <span aria-label="dislikes">👎 {signal.dislikesCount}</span>
+        </div>
+      </div>
+    </article>
+  );
+};
 
 const SESSION_TABS = [
   { key: 'asia', label: 'Asia' },
@@ -277,7 +300,7 @@ function normalizeSignal(id, data = {}) {
     stopLoss: data.stopLoss ?? null,
     tp1: data.tp1 ?? null,
     tp2: data.tp2 ?? null,
-    premiumOnly: data.premiumOnly === true,
+    premiumOnly: toBoolean(data.premiumOnly ?? data.preview?.premiumOnly ?? data.isPremium ?? data.isPremiumOnly),
     riskLevel: data.riskLevel ?? 'Moderate',
     validUntilLabel: validUntilDate ? formatTimestamp(validUntilDate) : 'No expiry set',
     validUntil: validUntil ?? null,
@@ -424,6 +447,17 @@ function isSignalLive(signal) {
 
 function hasSignalTip(signal) {
   return typeof signal?.tip === 'string' && signal.tip.trim().length > 0;
+}
+
+function toBoolean(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
 }
 
 export default SignalsSection;
